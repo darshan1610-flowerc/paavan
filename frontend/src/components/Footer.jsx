@@ -12,9 +12,6 @@ const Footer = () => {
           <Link to="/booking" className="font-label-md text-label-md uppercase text-on-surface-variant hover:text-secondary transition-colors duration-200">
             Pricing
           </Link>
-          <a href="#" className="font-label-md text-label-md uppercase text-on-surface-variant hover:text-secondary transition-colors duration-200">
-            Locations
-          </a>
           <Link to="/support" className="font-label-md text-label-md uppercase text-on-surface-variant hover:text-secondary transition-colors duration-200">
             Support
           </Link>
