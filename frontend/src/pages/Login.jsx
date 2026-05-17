@@ -44,8 +44,8 @@ const Login = () => {
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-xl items-center">
         
         {/* Cinematic Rotating EV Cycle */}
-        <div className="hidden md:flex flex-col items-center justify-center perspective-[1000px]">
-          <div className="relative w-full max-w-[400px] aspect-square flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center perspective-[1000px] mb-lg md:mb-0">
+          <div className="relative w-full max-w-[250px] md:max-w-[400px] aspect-square flex items-center justify-center">
             <div className="absolute inset-0 bg-secondary/10 rounded-full blur-3xl animate-pulse"></div>
             <img 
               src="/hero_bike.png" 
@@ -54,7 +54,7 @@ const Login = () => {
               style={{ filter: 'drop-shadow(0px 20px 30px rgba(4,94,76,0.3))' }}
             />
           </div>
-          <h2 className="font-headline-lg text-primary mt-lg text-center font-bold tracking-tight">
+          <h2 className="font-headline-md md:font-headline-lg text-primary mt-sm md:mt-lg text-center font-bold tracking-tight">
             The Future of <br/>Campus Mobility
           </h2>
         </div>
