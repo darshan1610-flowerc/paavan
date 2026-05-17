@@ -83,6 +83,10 @@ app.get('/api/bookings', async (req, res) => {
   }
 });
 
+app.get('/', (req, res) => {
+  res.send('<h1>PAAVAN Go Electric Backend is Running!</h1><p>View bookings at <a href="/api/bookings">/api/bookings</a></p>');
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Backend is running' });
 });
