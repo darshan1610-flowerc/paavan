@@ -25,7 +25,7 @@ const Booking = () => {
     setStatus({ type: 'loading', message: 'Processing your booking...' });
     
     try {
-      const response = await fetch('https://paavan-backend.onrender.com', {
+      const response = await fetch('https://paavan-backend.onrender.com/api/bookings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
