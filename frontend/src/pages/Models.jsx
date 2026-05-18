@@ -5,34 +5,76 @@ const Models = () => {
   
   const models = [
     {
-      name: "Geekay",
-      features: ["Dual Disc Brakes", "Range available: 16kms", "Size available: 26"],
-      color: "bg-surface-container",
-      image: "geekay.png"
-    },
-    {
       name: "Mach City",
       features: ["Power Brakes", "Size available: 26", "Range available: 48kms"],
-      color: "bg-surface-container-high",
-      image: "mach-city.png"
-    },
-    {
-      name: "Urban Terrain",
-      features: ["Light/Horn", "Pedal Assist Sensor", "Size Available: 26", "Range Available: 32kms", "Carrier Available"],
       color: "bg-surface-container",
-      image: "urban-terrain.png"
+      image: "mach_city.jpeg"
     },
     {
-      name: "Raleigh",
-      features: ["Power Brakes", "Size: 26", "Range: 16kms"],
+      name: "Geekay",
+      features: ["Dual Disc Brakes", "Size available: 26", "Range available: 16kms"],
       color: "bg-surface-container-high",
-      image: "raleigh.png"
+      image: "geekay.jpeg"
     },
     {
       name: "Schnell",
       features: ["Dual Disc Brakes", "Size: 26", "Range: 16kms"],
       color: "bg-surface-container",
-      image: "schnell.png"
+      image: "schnell.jpeg"
+    },
+    {
+      name: "Urban Terrain",
+      features: ["Light/Horn", "Pedal Assist Sensor", "Size Available: 26", "Range Available: 32kms", "Carrier Available"],
+      color: "bg-surface-container-high",
+      image: "urban_terrain.jpeg"
+    },
+    {
+      name: "Raleigh",
+      features: ["Power Brakes", "Size: 26", "Range: 16kms"],
+      color: "bg-surface-container",
+      image: "raleigh.jpeg"
+    },
+    {
+      name: "Nebzee Black",
+      features: ["Power Brakes", "Size available: 26", "Range: 16kms, 24kms, 32kms"],
+      color: "bg-surface-container-high",
+      image: "nebzee_black.jpeg"
+    },
+    {
+      name: "Hero Hustle",
+      features: ["21 Gears", "Front Suspension", "Dual Disc Brakes", "Size available: 29", "Range available: 48kms"],
+      color: "bg-surface-container",
+      image: "hero_hustle.jpeg"
+    },
+    {
+      name: "Hero Winn",
+      features: ["Dual Disc Brakes", "Light/Horn", "Pedal Assist Sensor", "350W motor", "Range Available: 35kms", "Most powerful of all"],
+      color: "bg-surface-container-high",
+      image: "hero_winn.jpeg"
+    },
+    {
+      name: "Sturdy Axiro Red",
+      features: ["Front Suspension", "Dual Disc Brakes", "Size available: 27.5", "Range: 16kms, 24kms, 32kms"],
+      color: "bg-surface-container",
+      image: "sturdy_axiro_red.jpeg"
+    },
+    {
+      name: "Sturdy Tweak",
+      features: ["Front suspension", "Dual disc brakes", "Light/Horn", "Size available: 27.5", "Range available: 32kms"],
+      color: "bg-surface-container-high",
+      image: "sturdy_tweak.jpeg"
+    },
+    {
+      name: "Sturdy Axiro",
+      features: ["Front suspension", "Dual disc brakes", "Alloy Rim", "Sizes available: 27.5, 29", "Range: 16kms, 24kms, 32kms"],
+      color: "bg-surface-container",
+      image: "sturdy_axiro.jpeg"
+    },
+    {
+      name: "Nebzee Copper",
+      features: ["Power Brakes", "Size available: 26", "Range: 16kms, 24kms, 32kms"],
+      color: "bg-surface-container-high",
+      image: "nebzee_copper.jpeg"
     }
   ];
 
@@ -49,7 +91,7 @@ const Models = () => {
                 <img 
                   src={`/${model.image}`} 
                   alt={model.name} 
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
                     e.target.onerror = null; 
                     e.target.src = `https://placehold.co/600x400/e8f5e1/045e4c?text=${model.name.replace(' ', '+')}`;
@@ -67,7 +109,13 @@ const Models = () => {
                 ))}
               </ul>
               
-              <button onClick={() => navigate('/guide')} className="w-full py-sm rounded-lg bg-primary text-on-primary font-bold uppercase tracking-widest hover:opacity-90 transition-all">
+              <button onClick={() => {
+                if (localStorage.getItem('termsAccepted') === 'true') {
+                  navigate('/guide');
+                } else {
+                  navigate('/terms');
+                }
+              }} className="w-full py-sm rounded-lg bg-primary text-on-primary font-bold uppercase tracking-widest hover:opacity-90 transition-all">
                 Select Model
               </button>
             </div>

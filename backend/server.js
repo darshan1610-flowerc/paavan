@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
+const twilio = require('twilio');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,15 +21,87 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder');
 
+// Initialize Twilio Client
+const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+
+let twilioClient;
+if (twilioAccountSid && twilioAuthToken) {
+  twilioClient = twilio(twilioAccountSid, twilioAuthToken);
+} else {
+  console.warn('WARNING: Twilio credentials are missing in your .env file. OTPs will not be sent via SMS.');
+}
+
 // Set up Multer for memory storage (uploads will go straight to Supabase, bypassing the local disk)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// 1. Login/Registration API
-app.post('/api/login', async (req, res) => {
-  const { name, phone } = req.body;
-  if (!name || !phone) {
-    return res.status(400).json({ error: 'Name and phone are required.' });
+// Mock OTP Storage (phone -> { otp, expiresAt })
+const otpStore = new Map();
+
+// 1a. Send OTP API
+app.post('/api/send-otp', async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) {
+    return res.status(400).json({ error: 'Phone number is required.' });
   }
+
+  // Format phone number for Twilio (assumes India +91 if exactly 10 digits without country code)
+  let formattedPhone = phone.trim();
+  if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
+    formattedPhone = '+91' + formattedPhone;
+  } else if (!formattedPhone.startsWith('+')) {
+    formattedPhone = '+' + formattedPhone;
+  }
+
+  // Generate 4-digit OTP
+  const otp = Math.floor(1000 + Math.random() * 9000).toString();
+  otpStore.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // Expires in 5 mins
+
+  try {
+    if (twilioClient && twilioPhoneNumber) {
+      await twilioClient.messages.create({
+        body: `Your PAAVAN Go Electric login OTP is ${otp}. It is valid for 5 minutes.`,
+        from: twilioPhoneNumber,
+        to: formattedPhone
+      });
+      console.log(`[TWILIO OTP] Sent OTP to ${formattedPhone}`);
+    } else {
+      console.log(`[MOCK OTP] Generated OTP ${otp} for phone ${phone}. (Add Twilio keys to .env to send real SMS)`);
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'OTP sent successfully.'
+    });
+  } catch (error) {
+    console.error('Twilio Error:', error);
+    return res.status(500).json({ error: 'Failed to send SMS. Please check the phone number and try again.' });
+  }
+});
+
+// 1b. Login/Registration API
+app.post('/api/login', async (req, res) => {
+  const { name, phone, otp } = req.body;
+  if (!name || !phone || !otp) {
+    return res.status(400).json({ error: 'Name, phone, and OTP are required.' });
+  }
+
+  // Verify OTP
+  const storedOtpData = otpStore.get(phone);
+  if (!storedOtpData) {
+    return res.status(400).json({ error: 'OTP not requested or expired.' });
+  }
+  if (storedOtpData.otp !== otp) {
+    return res.status(400).json({ error: 'Invalid OTP.' });
+  }
+  if (Date.now() > storedOtpData.expiresAt) {
+    otpStore.delete(phone);
+    return res.status(400).json({ error: 'OTP has expired.' });
+  }
+
+  // Clear OTP on successful verification
+  otpStore.delete(phone);
 
   try {
     // Check if user exists

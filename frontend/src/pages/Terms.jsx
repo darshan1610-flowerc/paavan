@@ -4,7 +4,8 @@ const Terms = () => {
   const navigate = useNavigate();
 
   const handleAccept = () => {
-    navigate('/booking'); // After terms, go to plan selection/booking
+    localStorage.setItem('termsAccepted', 'true');
+    navigate('/feedback'); // Make sure they fill the feedback later
   };
 
   return (

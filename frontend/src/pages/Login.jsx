@@ -2,20 +2,58 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ name: '', phone: '' });
+  const [formData, setFormData] = useState({ name: '', phone: '', otp: '' });
   const [status, setStatus] = useState({ type: '', message: '' });
+  const [otpStep, setOtpStep] = useState(false); // false = enter details, true = enter OTP
   const navigate = useNavigate();
+
+  const BACKEND_URL = 'https://paavan-backend.onrender.com'; // Local: 'http://localhost:5000'
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    setStatus({ type: 'loading', message: 'Logging in...' });
+    if (!formData.name || !formData.phone) {
+      setStatus({ type: 'error', message: 'Name and phone are required' });
+      return;
+    }
+    
+    setStatus({ type: 'loading', message: 'Sending OTP...' });
 
     try {
-      const response = await fetch('https://paavan-backend.onrender.com/api/login', {
+      const response = await fetch(`${BACKEND_URL}/api/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone }),
+      });
+      
+      const data = await response.json();
+
+      if (response.ok) {
+        setStatus({ type: 'success', message: `OTP sent! ${data.mockOtp ? '(Mock OTP: ' + data.mockOtp + ')' : ''}` });
+        setOtpStep(true);
+      } else {
+        setStatus({ type: 'error', message: data.error || 'Failed to send OTP' });
+      }
+    } catch (error) {
+      console.error(error);
+      setStatus({ type: 'error', message: 'Network error. Make sure backend is running.' });
+    }
+  };
+
+  const handleVerifyAndLogin = async (e) => {
+    e.preventDefault();
+    if (!formData.otp) {
+      setStatus({ type: 'error', message: 'OTP is required' });
+      return;
+    }
+
+    setStatus({ type: 'loading', message: 'Verifying and logging in...' });
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -25,17 +63,17 @@ const Login = () => {
 
       if (response.ok) {
         if (data.existing) {
-          setStatus({ type: 'info', message: 'Welcome back! Excel has unique entries only. Proceeding...' });
+          setStatus({ type: 'info', message: 'Welcome back! Proceeding...' });
         } else {
           setStatus({ type: 'success', message: 'Successfully registered! Proceeding...' });
         }
-        setTimeout(() => navigate('/terms'), 2000);
+        setTimeout(() => navigate('/home'), 2000);
       } else {
         setStatus({ type: 'error', message: data.error || 'Failed to login' });
       }
     } catch (error) {
       console.error(error);
-      setStatus({ type: 'error', message: 'Network error. Make sure local backend is running.' });
+      setStatus({ type: 'error', message: 'Network error. Make sure backend is running.' });
     }
   };
 
@@ -75,33 +113,58 @@ const Login = () => {
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-md">
-            <div>
-              <label className="font-label-sm uppercase text-on-surface-variant mb-base block">Full Name</label>
-              <input 
-                required 
-                name="name" 
-                value={formData.name} 
-                onChange={handleChange} 
-                className="w-full bg-surface-container border-b-2 border-outline-variant focus:border-secondary transition-colors p-md text-on-surface focus:outline-none rounded-t-lg" 
-                type="text" 
-                placeholder="Enter your name" 
-              />
-            </div>
-            <div>
-              <label className="font-label-sm uppercase text-on-surface-variant mb-base block">Phone Number</label>
-              <input 
-                required 
-                name="phone" 
-                value={formData.phone} 
-                onChange={handleChange} 
-                className="w-full bg-surface-container border-b-2 border-outline-variant focus:border-secondary transition-colors p-md text-on-surface focus:outline-none rounded-t-lg" 
-                type="tel" 
-                placeholder="Enter your phone number" 
-              />
-            </div>
+          <form onSubmit={otpStep ? handleVerifyAndLogin : handleSendOtp} className="space-y-md">
+            {!otpStep ? (
+              <>
+                <div>
+                  <label className="font-label-sm uppercase text-on-surface-variant mb-base block">Full Name</label>
+                  <input 
+                    required 
+                    name="name" 
+                    value={formData.name} 
+                    onChange={handleChange} 
+                    className="w-full bg-surface-container border-b-2 border-outline-variant focus:border-secondary transition-colors p-md text-on-surface focus:outline-none rounded-t-lg" 
+                    type="text" 
+                    placeholder="Enter your name" 
+                  />
+                </div>
+                <div>
+                  <label className="font-label-sm uppercase text-on-surface-variant mb-base block">Phone Number</label>
+                  <input 
+                    required 
+                    name="phone" 
+                    value={formData.phone} 
+                    onChange={handleChange} 
+                    className="w-full bg-surface-container border-b-2 border-outline-variant focus:border-secondary transition-colors p-md text-on-surface focus:outline-none rounded-t-lg" 
+                    type="tel" 
+                    placeholder="Enter your phone number" 
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="font-label-sm uppercase text-on-surface-variant mb-base block">Enter OTP</label>
+                <input 
+                  required 
+                  name="otp" 
+                  value={formData.otp} 
+                  onChange={handleChange} 
+                  className="w-full bg-surface-container border-b-2 border-outline-variant focus:border-secondary transition-colors p-md text-on-surface focus:outline-none rounded-t-lg text-center tracking-widest text-lg font-bold" 
+                  type="text" 
+                  maxLength="4"
+                  placeholder="• • • •" 
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setOtpStep(false)}
+                  className="text-primary text-sm mt-2 hover:underline"
+                >
+                  Change Phone Number
+                </button>
+              </div>
+            )}
             <button type="submit" disabled={status.type === 'loading'} className="w-full mt-lg py-md rounded-xl bg-primary text-on-primary font-bold uppercase tracking-widest hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg disabled:opacity-50 disabled:scale-100">
-              {status.type === 'loading' ? 'Processing...' : 'Login & Continue'}
+              {status.type === 'loading' ? 'Processing...' : (otpStep ? 'Verify & Login' : 'Send OTP')}
             </button>
           </form>
         </div>

@@ -18,8 +18,8 @@ const Navbar = () => {
               <span className={`block w-6 h-[2px] bg-primary transition-transform ${menuOpen ? '-rotate-45 -translate-y-[7px]' : ''}`}></span>
             </button>
 
-            <Link to="/" className="font-headline-lg-mobile md:font-headline-lg font-bold tracking-tighter text-primary">
-              PAAVAN GO ELECTRIC
+            <Link to="/home" className="font-headline-lg-mobile md:font-headline-lg font-bold tracking-tighter">
+              <span className="text-secondary drop-shadow-[0_0_8px_rgba(154,217,61,0.6)] tracking-wide uppercase">PAAVAN GO ELECTRIC</span>
             </Link>
           </div>
 
@@ -40,6 +40,7 @@ const Navbar = () => {
           <span className="material-symbols-outlined">close</span>
         </button>
 
+        <Link to="/home" onClick={toggleMenu} className="text-on-surface font-label-md uppercase hover:text-secondary transition-colors">Home</Link>
         <Link to="/terms" onClick={toggleMenu} className="text-on-surface font-label-md uppercase hover:text-secondary transition-colors">Terms & Conditions</Link>
         <Link to="/booking" onClick={toggleMenu} className="text-on-surface font-label-md uppercase hover:text-secondary transition-colors">Select Plan</Link>
         <Link to="/models" onClick={toggleMenu} className="text-on-surface font-label-md uppercase hover:text-secondary transition-colors">Select Model</Link>
@@ -49,6 +50,9 @@ const Navbar = () => {
 
       {/* BottomNavBar (Mobile only) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-margin-mobile h-20 rounded-t-full bg-surface-container-lowest/80 backdrop-blur-lg border-t border-secondary/20 shadow-2xl shadow-secondary/5">
+        <Link to="/home" className="flex flex-col items-center justify-center text-outline opacity-60 hover:opacity-100 hover:text-primary">
+          <span className="material-symbols-outlined">home</span>
+        </Link>
         <Link to="/models" className="flex flex-col items-center justify-center text-outline opacity-60 hover:opacity-100 hover:text-primary">
           <span className="material-symbols-outlined">electric_bike</span>
         </Link>

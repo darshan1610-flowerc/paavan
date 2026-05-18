@@ -5,6 +5,7 @@ import Footer from './components/Footer';
 import Booking from './pages/Booking';
 import Support from './pages/Support';
 import Login from './pages/Login';
+import Home from './pages/Home';
 import Terms from './pages/Terms';
 import Models from './pages/Models';
 import UsageGuide from './pages/UsageGuide';
@@ -19,6 +20,7 @@ function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Login />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/support" element={<Support />} />
             <Route path="/terms" element={<Terms />} />

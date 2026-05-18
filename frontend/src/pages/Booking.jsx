@@ -129,10 +129,19 @@ const Booking = () => {
 
               <div>
                 <label className="font-label-sm text-label-sm uppercase text-on-surface-variant mb-base block">Upload Aadhaar Card (Required)</label>
-                <div className="w-full border-2 border-dashed border-outline-variant rounded-xl p-md flex flex-col items-center justify-center bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer relative mt-base">
+                <div className={`w-full border-2 border-dashed ${formData.aadhaar ? 'border-secondary bg-secondary/10' : 'border-outline-variant bg-surface-container hover:bg-surface-container-high'} rounded-xl p-md flex flex-col items-center justify-center transition-colors cursor-pointer relative mt-base`}>
                   <input required type="file" name="aadhaar" onChange={handleChange} accept="image/*,.pdf" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                  <span className="material-symbols-outlined text-[32px] text-primary mb-xs">upload_file</span>
-                  <span className="font-label-sm text-on-surface-variant text-center">Tap to attach Aadhaar document</span>
+                  {formData.aadhaar ? (
+                    <>
+                      <span className="material-symbols-outlined text-[32px] text-secondary mb-xs">task</span>
+                      <span className="font-label-sm text-secondary text-center font-bold">Document Uploaded: {formData.aadhaar.name}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[32px] text-primary mb-xs">upload_file</span>
+                      <span className="font-label-sm text-on-surface-variant text-center">Tap to attach Aadhaar document</span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -154,22 +163,17 @@ const Booking = () => {
               <span className="material-symbols-outlined text-primary text-[40px] mb-base" style={{fontVariationSettings: "'FILL' 1"}}>support_agent</span>
               <h4 className="font-label-md text-label-md uppercase tracking-wider text-primary">24/7 Support</h4>
             </div>
-            <div className="col-span-2 glass-panel p-md rounded-xl flex items-center gap-md hover:bg-primary/5 transition-colors">
-              <div className="p-md bg-secondary/20 rounded-full">
-                <span className="material-symbols-outlined text-primary text-[32px]" style={{fontVariationSettings: "'FILL' 1"}}>lock_open</span>
-              </div>
-              <div>
-                <h4 className="font-label-md text-label-md uppercase tracking-wider text-primary">Smart Lock Technology</h4>
-                <p className="text-on-surface-variant font-label-sm">Keyless entry via Paavan Mobile App</p>
-              </div>
-            </div>
-            <div className="col-span-2 glass-panel p-md rounded-xl flex items-center gap-md hover:bg-primary/5 transition-colors">
-              <div className="p-md bg-secondary/20 rounded-full">
-                <span className="material-symbols-outlined text-primary text-[32px]" style={{fontVariationSettings: "'FILL' 1"}}>verified_user</span>
-              </div>
-              <div>
-                <h4 className="font-label-md text-label-md uppercase tracking-wider">Ride Insurance Included</h4>
-                <p className="text-on-surface-variant font-label-sm">Fully covered against accidents & theft</p>
+            <div className="col-span-2 glass-panel p-md rounded-xl flex flex-col items-center justify-center text-center overflow-hidden relative min-h-[200px]">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute inset-0 bg-secondary/10 rounded-full blur-2xl animate-spin-slow"></div>
+              <div className="z-10 flex flex-col items-center justify-center w-full h-full">
+                 <img 
+                   src="/hero_bike.png" 
+                   alt="EV Cycle Model" 
+                   className="w-[140px] h-auto object-contain animate-spin-y drop-shadow-[0_0_20px_rgba(154,217,61,0.6)] mb-2"
+                 />
+                 <h4 className="font-label-md text-label-md uppercase tracking-wider text-secondary drop-shadow-[0_0_8px_rgba(154,217,61,0.8)] font-bold">Next-Gen EV Cycles</h4>
+                 <p className="text-primary font-label-sm tracking-widest uppercase opacity-80">Experience the future</p>
               </div>
             </div>
           </div>
