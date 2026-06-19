@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-dm-sans), 'DM Sans', sans-serif;
+  --font-serif: var(--font-dm-serif), 'DM Serif Display', serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: #f5f9f5;
+  color: #1a2e1e;
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-dm-serif), 'DM Serif Display', serif;
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.glass-dark {
+  background: rgba(4, 52, 44, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(122, 219, 180, 0.12);
+}
+
+.video-glow {
+  box-shadow: 0 0 60px rgba(15, 110, 86, 0.35), 0 0 120px rgba(15, 110, 86, 0.12);
+}
+
+/* 3D flip cards
+   Front: normal flow  → defines natural card height
+   Back:  absolute     → overlays front exactly, no height collapse
+   .tapped class enables tap-to-flip on touch screens */
+.flip-card { perspective: 1200px; }
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Desktop hover flip */
+@media (hover: hover) and (pointer: fine) {
+  .flip-card:hover .flip-card-inner { transform: rotateY(180deg); }
+}
+/* Mobile tap flip */
+.flip-card.tapped .flip-card-inner { transform: rotateY(180deg); }
+.flip-card-front {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.flip-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: rotateY(180deg);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Hide scrollbar for step indicator overflow */
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #f0f5f0; }
+::-webkit-scrollbar-thumb { background: #b8d8c8; border-radius: 99px; }
