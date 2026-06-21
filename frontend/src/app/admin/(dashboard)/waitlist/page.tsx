@@ -6,6 +6,7 @@ interface WaitlistEntry {
   id: string;
   position: number | null;
   advance_deposit: number;
+  payment_id: string | null;
   status: string;
   notified_at: string | null;
   created_at: string;
