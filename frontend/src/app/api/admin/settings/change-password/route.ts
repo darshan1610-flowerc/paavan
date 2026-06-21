@@ -11,8 +11,7 @@ export async function POST(req: NextRequest) {
     const { user, supabase } = await requireAdmin(req);
     const { currentPassword, newPassword } = await validateBody(changePasswordSchema, req);
 
-    const { data: profile } = await supabase.from('users').select('phone').eq('id', user.id).single();
-    if (!profile) {
+    if (!user.email) {
       throw new AdminAuthError('Account not found', 403);
     }
 
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
     // shared machine.
     const verifyClient = createAdminClient();
     const { error: verifyError } = await verifyClient.auth.signInWithPassword({
-      email: phoneToInternalEmail(profile.phone),
+      email: user.email,
       password: currentPassword,
     });
     if (verifyError) {

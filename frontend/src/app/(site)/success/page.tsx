@@ -9,6 +9,8 @@ import Footer from '@/components/Footer';
 gsap.registerPlugin(useGSAP);
 
 interface ActiveRide {
+  bookingId: string;
+  bookingRef?: string;
   bike: string;
   plan: string;
   duration: string;
@@ -22,6 +24,12 @@ export default function SuccessPage() {
   const [ride, setRide] = useState<ActiveRide | null>(null);
 
   useEffect(() => {
+    const confirmed = localStorage.getItem('paavan_payment_confirmed');
+    if (!confirmed) {
+      window.location.replace('/');
+      return;
+    }
+    localStorage.removeItem('paavan_payment_confirmed');
     const raw = localStorage.getItem('paavan_active_ride');
     if (raw) setRide(JSON.parse(raw));
   }, []);
@@ -32,6 +40,7 @@ export default function SuccessPage() {
       tl.from('.success-ring', { scale: 0, opacity: 0, duration: 0.6, delay: 0.2 })
         .from('.success-h', { y: 30, opacity: 0, duration: 0.6 }, '-=0.2')
         .from('.success-sub', { y: 20, opacity: 0, duration: 0.5 }, '-=0.3')
+        .from('.success-bike-banner', { scale: 0.95, opacity: 0, duration: 0.5 }, '-=0.3')
         .from('.success-card', { y: 20, opacity: 0, duration: 0.5 }, '-=0.3')
         .from('.success-note', { y: 20, opacity: 0, duration: 0.5 }, '-=0.3')
         .from('.success-btn', { y: 20, opacity: 0, duration: 0.5 }, '-=0.2');
@@ -39,7 +48,7 @@ export default function SuccessPage() {
     { scope: containerRef }
   );
 
-  const bookingId = '#PVN-2406-' + String(Math.floor(Math.random() * 9000) + 1000);
+  const bookingId = ride?.bookingRef ?? ride?.bookingId?.slice(0, 8).toUpperCase() ?? '—';
 
   return (
     <main className="min-h-screen" ref={containerRef}>
@@ -55,48 +64,49 @@ export default function SuccessPage() {
         </div>
 
         <h1 className="success-h font-display text-[34px] text-[#04342C] mb-2">
-          Welcome to PAAVAN,
+          Payment confirmed,
           <br />
           <em className="italic text-[#0F6E56]">{ride?.name?.split(' ')[0] ?? 'Rider'}!</em>
         </h1>
 
-        <p className="success-sub text-[15px] text-[#7a9080] leading-[1.75] max-w-[420px] mx-auto mb-8">
-          Your <strong className="text-[#04342C]">{ride?.bike}</strong> is booked for{' '}
-          <strong className="text-[#04342C]">{ride?.duration}</strong>. Show this screen to our campus
-          operator — they'll deliver your bike directly to you!
+        <p className="success-sub text-[13px] text-[#7a9080] leading-[1.75] max-w-[420px] mx-auto mb-6">
+          Show this screen to the PAAVAN shop operator to collect your bike.
         </p>
+
+        {/* Bike name — prominent for shop operator */}
+        <div className="success-bike-banner bg-[#04342C] rounded-2xl px-6 py-5 mb-6 text-center shadow-[0_8px_30px_rgba(4,52,44,0.18)]">
+          <div className="text-[11px] text-[#5db88a] tracking-[1.5px] uppercase font-bold mb-2">Bike to collect</div>
+          <div className="font-display text-[32px] text-white leading-tight">{ride?.bike ?? '—'}</div>
+          <div className="text-[13px] text-[#7adbb4] mt-1">{ride?.plan} · {ride?.duration}</div>
+        </div>
 
         {/* Booking card */}
         <div className="success-card bg-white border border-[#cce0cc] rounded-xl p-6 text-left shadow-[0_4px_20px_rgba(15,110,86,0.08)] mb-6">
           {[
             { label: 'Booking ID', value: bookingId, highlight: true },
-            { label: 'Bike', value: ride?.bike ?? '—' },
-            { label: 'Plan', value: ride ? `${ride.plan} (${ride.duration})` : '—' },
+            { label: 'Rider name', value: ride?.name ?? '—' },
+            { label: 'Start date', value: ride?.startDate ?? '—' },
             { label: 'Amount paid', value: ride ? `₹${ride.total.toLocaleString('en-IN')}` : '—' },
-            { label: 'Deposit', value: '₹1,000 (refunded in 24hr on return)' },
-            { label: 'Status', value: '✓ Confirmed', green: true },
-          ].map(({ label, value, highlight, green }) => (
+            { label: 'Deposit', value: '₹1,000 (refunded on return)' },
+            { label: 'Payment status', value: '✓ Paid & Confirmed', green: true },
+          ].map(({ label, value, highlight, green }: any) => (
             <div key={label} className="flex justify-between items-center py-2.5 border-b last:border-b-0 border-[#f0f5f0] text-[13px]">
               <span className="text-[#7a9080]">{label}</span>
-              <span className={`font-semibold ${highlight ? 'text-[#0F6E56]' : green ? 'text-[#0F6E56]' : 'text-[#04342C]'}`}>
+              <span className={`font-semibold text-right ${highlight ? 'text-[#0F6E56]' : green ? 'text-[#0F6E56]' : 'text-[#04342C]'}`}>
                 {value}
               </span>
             </div>
           ))}
         </div>
 
-        {/* Delivery note */}
+        {/* Instructions */}
         <div className="success-note bg-[#EAF3DE] border border-[#b8d898] rounded-xl p-5 text-left text-[13px] text-[#085041] leading-[1.75] mb-8">
-          <div className="font-bold text-[#04342C] mb-2">📍 Bike delivery process</div>
-          Show this screen to any PAAVAN campus operator. They'll verify your booking ID, deliver the
-          bike to your hostel or specified location, and hand you your first{' '}
-          <strong>daily unlock code</strong>.
+          <div className="font-bold text-[#04342C] mb-2">📍 How to collect your bike</div>
+          Visit the PAAVAN shop on campus and show this screen to the operator. They will verify your
+          Booking ID and hand you your <strong>{ride?.bike ?? 'bike'}</strong>.
           <br /><br />
-          <strong>📱 Unlock code</strong> refreshes every midnight — check it in{' '}
-          <strong>My rides</strong> each morning.
-          <br /><br />
-          <strong>💰 To get your ₹1,000 deposit back:</strong> Return the bike + submit a short
-          condition video. Refunded within 24 hours after our operator verifies.
+          <strong>💰 To get your ₹1,000 deposit back:</strong> Return the bike to the shop and
+          submit a short condition video via <strong>My Rides</strong>. Refunded within 24 hours.
         </div>
 
         <Link

@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminAuthError } from '@/lib/server/errors';
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
@@ -20,7 +21,7 @@ export async function requireAdmin(req: NextRequest) {
     throw new AdminAuthError('Not authenticated', 401);
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await createAdminClient()
     .from('users')
     .select('role')
     .eq('id', user.id)
@@ -30,7 +31,10 @@ export async function requireAdmin(req: NextRequest) {
     throw new AdminAuthError('Not authorized', 403);
   }
 
-  return { user, supabase };
+  // Return the service-role client for DB operations in admin routes.
+  // requireAdmin already verified the user is authenticated and has the admin
+  // role, so bypassing RLS here is safe and avoids is_admin() policy failures.
+  return { user, supabase: createAdminClient() };
 }
 
 // CSRF defense-in-depth: same-site session cookies already cover most of

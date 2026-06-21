@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const { data: fetched, error: fetchError } = await supabase
       .from('deposits')
-      .select('id, amount, status, users(phone), bookings(booking_ref)')
+      .select('id, amount, status, users!deposits_user_id_fkey(phone), bookings(booking_ref)')
       .eq('id', depositId)
       .single();
 

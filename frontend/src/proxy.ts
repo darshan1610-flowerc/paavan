@@ -11,9 +11,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // No Supabase project wired up yet (env vars unset) — fail closed with a
-  // clear message instead of crashing inside createServerClient with a
-  // raw stack trace, on every single /admin/* request including login.
   if (!isSupabaseConfigured()) {
     return new NextResponse('Admin portal is not yet configured: Supabase env vars are missing.', {
       status: 503,
@@ -32,20 +29,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/admin/login', request.url));
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (profileError) {
-    console.error('[proxy] profile lookup failed for user id', user.id, profileError);
-  }
-
-  if (profile?.role !== 'admin') {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-
+  // Role check is handled by the admin layout Server Component,
+  // which uses the service-role key and bypasses RLS entirely.
   return response;
 }
 

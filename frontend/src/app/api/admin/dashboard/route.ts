@@ -6,11 +6,14 @@ export async function GET(req: NextRequest) {
   try {
     const { supabase } = await requireAdmin(req);
 
+    // Clean up ghost bookings (pending > 30 min with no payment)
+    await supabase.rpc('cancel_stale_pending_bookings');
+
     const [bikesRes, activeBookingsRes, pendingAadhaarRes, pendingDepositsRes, closingDepositsRes, recentBookingsRes] =
       await Promise.all([
         supabase.from('bikes').select('total_units, available_units, is_active'),
         supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('users').select('id', { count: 'exact', head: true }).eq('aadhaar_verified', false),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('aadhaar_status', 'pending').not('aadhaar_file_path', 'is', null),
         supabase.from('deposits').select('id', { count: 'exact', head: true }).eq('status', 'pending_review'),
         supabase
           .from('deposits')

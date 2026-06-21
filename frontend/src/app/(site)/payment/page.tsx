@@ -80,7 +80,6 @@ export default function PaymentPage() {
       // 2. Mock mode bypass when keys are missing
       if (orderData.mock) {
         console.log('Simulating payment success in sandbox mode...');
-        // Simulate minor visual delay
         await new Promise((resolve) => setTimeout(resolve, 1200));
 
         const resVerify = await fetch(`${backendUrl}/api/payment/verify`, {
@@ -99,6 +98,7 @@ export default function PaymentPage() {
           throw new Error(errData.error || 'Failed to verify mock payment.');
         }
 
+        localStorage.setItem('paavan_payment_confirmed', 'true');
         router.push('/success');
         return;
       }
@@ -135,6 +135,7 @@ export default function PaymentPage() {
               throw new Error(errData.error || 'Payment verification failed.');
             }
 
+            localStorage.setItem('paavan_payment_confirmed', 'true');
             router.push('/success');
           } catch (err: any) {
             setErrorMsg(err.message || 'Payment verification failed.');

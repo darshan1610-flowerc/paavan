@@ -82,9 +82,10 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
           if (data.user.date_of_birth) {
             localStorage.setItem('userDob', data.user.date_of_birth);
           }
+          localStorage.setItem('aadhaarVerified', data.user.aadhaar_verified ? 'true' : 'false');
         }
 
-        const isReturning = data.existing === true;
+        const isReturning = data.existing === true && data.user?.aadhaar_verified === true;
         if (cardRef.current && overlayRef.current) {
           gsap.to(cardRef.current, {
             y: -20,

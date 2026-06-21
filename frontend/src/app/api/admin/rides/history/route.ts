@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
           'deposits(status)'
       )
       .in('status', ['completed', 'cancelled'])
+      .not('payment_id', 'is', null) // exclude ghost bookings (auto-cancelled, never paid)
       .order('created_at', { ascending: false });
 
     if (bikeId) query = query.eq('bike_id', bikeId);

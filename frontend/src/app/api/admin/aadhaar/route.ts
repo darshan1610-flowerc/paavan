@@ -30,7 +30,9 @@ export async function GET(req: NextRequest) {
         'id, booking_ref, created_at, user_id, ' +
           'users!inner(id, name, phone, aadhaar_file_path, aadhaar_submitted_at, aadhaar_status)'
       )
+      .eq('status', 'active')
       .eq('users.aadhaar_status', 'pending')
+      .not('users.aadhaar_file_path', 'is', null)
       .order('created_at', { ascending: false });
 
     if (error) throw error;

@@ -8,13 +8,8 @@ export default function Footer() {
           {/* Brand */}
           <div className="max-w-[260px]">
             <Link href="/" className="block mb-3 w-fit">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/logo.png"
-                alt="PAAVAN"
-                className="block w-[130px] sm:w-[180px]"
-                style={{ height: 'auto', filter: 'brightness(0) invert(1)' }}
-              />
+              <div className="font-display text-[22px] text-white leading-tight">PAAVAN</div>
+              <div className="text-[11px] text-[#5db88a] font-semibold tracking-wide">Go-Electric (OPC) Pvt. Ltd.</div>
             </Link>
             <p className="text-[12px] text-[#6aaa88] leading-relaxed">
               Campus-first micromobility for IIT Bombay. ₹39/day. No license required. Removable battery.

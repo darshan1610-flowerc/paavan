@@ -196,7 +196,7 @@ import { createClient } from '@/lib/supabase/client';
 export default function BikesPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [waitlistBike, setWaitlistBike] = useState<string | null>(null);
+  const [waitlistBike, setWaitlistBike] = useState<{ id: string; name: string } | null>(null);
   const [bikes, setBikes] = useState<any[]>(BIKES);
   const liveStock = useBikeStock();
 
@@ -214,19 +214,23 @@ export default function BikesPage() {
             const existing = BIKES.find(b => b.name.toLowerCase() === dbBike.name.toLowerCase());
             
             let imageUrl = dbBike.image_path || existing?.imageUrl || '/bikes/machcity.png';
-            if (imageUrl.startsWith('bike-images/') || imageUrl.startsWith('bike_images/')) {
-              const cleanPath = imageUrl.replace(/^(bike-images\/|bike_images\/)/, '');
-              const { data: publicUrlData } = supabase.storage.from('bike-images').getPublicUrl(cleanPath);
+            if (imageUrl && !imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+              const { data: publicUrlData } = supabase.storage.from('bike-images').getPublicUrl(imageUrl);
               imageUrl = publicUrlData?.publicUrl || imageUrl;
             }
 
             return {
               id: dbBike.id,
               name: dbBike.name,
+              description: dbBike.description || undefined,
               accentColor: existing?.accentColor || '#0F6E56',
               imageUrl: imageUrl,
               tag: dbBike.available_units === 0 ? 'Out of Stock' : (existing?.tag || null),
-              specs: Array.isArray(dbBike.specs) ? dbBike.specs : (existing?.specs || []),
+              specs: Array.isArray(dbBike.specs)
+                ? dbBike.specs
+                : dbBike.specs && typeof dbBike.specs === 'object'
+                  ? Object.values(dbBike.specs as Record<string, string>).filter(Boolean)
+                  : (existing?.specs || []),
               inStock: dbBike.available_units > 0,
               units: dbBike.available_units,
             };
@@ -301,7 +305,7 @@ export default function BikesPage() {
                 inStock={inStock}
                 units={units}
                 onSelect={() => handleSelectBike(bike)}
-                onWaitlist={() => setWaitlistBike(bike.name)}
+                onWaitlist={() => setWaitlistBike({ id: bike.id, name: bike.name })}
               />
             );
           })}
@@ -319,7 +323,7 @@ export default function BikesPage() {
             <div className="text-[14px] font-bold text-[#04342C] mb-1">All bikes include</div>
             <div className="text-[12px] text-[#7a9080] leading-relaxed">
               Removable waterproof battery · Pedal assist up to 50 km/h · Key-based throttle lock ·
-              Daily unlock code · On-call campus maintenance · ₹1,000 refundable security deposit
+              Key-based throttle lock · On-call campus maintenance · ₹1,000 refundable security deposit
             </div>
           </div>
         </div>
@@ -328,7 +332,8 @@ export default function BikesPage() {
       <Footer />
 
       <WaitlistModal
-        bikeName={waitlistBike ?? ''}
+        bikeId={waitlistBike?.id ?? ''}
+        bikeName={waitlistBike?.name ?? ''}
         isOpen={!!waitlistBike}
         onClose={() => setWaitlistBike(null)}
       />

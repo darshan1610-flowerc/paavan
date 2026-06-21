@@ -23,13 +23,12 @@ const features = [
   {
     icon: (
       <svg className="w-[26px] h-[26px] stroke-[#0F6E56] fill-none" strokeWidth="1.8" viewBox="0 0 24 24">
-        <rect x="3" y="11" width="18" height="11" rx="2"/>
-        <path d="M7 11V7a5 5 0 0110 0v4"/>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
     ),
-    title: 'Daily unlock code',
-    subtitle: 'Fresh code every midnight',
-    desc: 'New 4-digit code resets every midnight. Key-based throttle protects against theft even if your code is seen.',
+    title: 'Key-based lock',
+    subtitle: 'Secure & anti-theft',
+    desc: 'Every bike comes with a key-based throttle lock that prevents unauthorised use even if someone tries to ride it.',
     accent: '#e0eeff',
   },
   {

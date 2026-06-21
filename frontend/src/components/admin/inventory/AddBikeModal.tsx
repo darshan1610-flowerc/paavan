@@ -10,11 +10,7 @@ interface AddBikeModalProps {
 export default function AddBikeModal({ onClose, onCreated }: AddBikeModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [battery, setBattery] = useState('');
-  const [range, setRange] = useState('');
-  const [pricePerDay, setPricePerDay] = useState('');
-  const [pricePerWeek, setPricePerWeek] = useState('');
-  const [pricePerMonth, setPricePerMonth] = useState('');
+  const [specs, setSpecs] = useState<string[]>(['']);
   const [totalUnits, setTotalUnits] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState('');
@@ -23,8 +19,8 @@ export default function AddBikeModal({ onClose, onCreated }: AddBikeModalProps) 
   const handleSubmit = async () => {
     setError('');
     if (!name.trim()) return setError('Bike name is required');
-    if (!pricePerDay || !pricePerWeek || !pricePerMonth || !totalUnits) {
-      return setError('All prices and total units are required');
+    if (!totalUnits || Number(totalUnits) < 1) {
+      return setError('Total units must be at least 1');
     }
 
     setSubmitting(true);
@@ -36,7 +32,7 @@ export default function AddBikeModal({ onClose, onCreated }: AddBikeModalProps) 
         const uploadRes = await fetch('/api/admin/inventory/upload-image', { method: 'POST', body: formData });
         const uploadData = await uploadRes.json();
         if (!uploadRes.ok) throw new Error(uploadData.error ?? 'Image upload failed');
-        imagePath = uploadData.path;
+        imagePath = uploadData.url;
       }
 
       const res = await fetch('/api/admin/inventory', {
@@ -45,10 +41,7 @@ export default function AddBikeModal({ onClose, onCreated }: AddBikeModalProps) 
         body: JSON.stringify({
           name,
           description,
-          specs: { battery, range },
-          pricePerDay: Number(pricePerDay),
-          pricePerWeek: Number(pricePerWeek),
-          pricePerMonth: Number(pricePerMonth),
+          specs: specs.filter(s => s.trim()),
           totalUnits: Number(totalUnits),
           imagePath,
         }),
@@ -83,39 +76,34 @@ export default function AddBikeModal({ onClose, onCreated }: AddBikeModalProps) 
             rows={2}
             className="w-full px-3.5 py-2.5 bg-[#0a2018] border border-[#1f4a38] rounded-[8px] text-[13px] text-white focus:outline-none focus:border-[#0F6E56]"
           />
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              value={battery}
-              onChange={(e) => setBattery(e.target.value)}
-              placeholder="Battery (e.g. 48V 10Ah)"
-              className="px-3.5 py-2.5 bg-[#0a2018] border border-[#1f4a38] rounded-[8px] text-[13px] text-white focus:outline-none focus:border-[#0F6E56]"
-            />
-            <input
-              value={range}
-              onChange={(e) => setRange(e.target.value)}
-              placeholder="Range (e.g. 40km)"
-              className="px-3.5 py-2.5 bg-[#0a2018] border border-[#1f4a38] rounded-[8px] text-[13px] text-white focus:outline-none focus:border-[#0F6E56]"
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <input
-              value={pricePerDay}
-              onChange={(e) => setPricePerDay(e.target.value.replace(/\D/g, ''))}
-              placeholder="₹/day"
-              className="px-3.5 py-2.5 bg-[#0a2018] border border-[#1f4a38] rounded-[8px] text-[13px] text-white focus:outline-none focus:border-[#0F6E56]"
-            />
-            <input
-              value={pricePerWeek}
-              onChange={(e) => setPricePerWeek(e.target.value.replace(/\D/g, ''))}
-              placeholder="₹/week"
-              className="px-3.5 py-2.5 bg-[#0a2018] border border-[#1f4a38] rounded-[8px] text-[13px] text-white focus:outline-none focus:border-[#0F6E56]"
-            />
-            <input
-              value={pricePerMonth}
-              onChange={(e) => setPricePerMonth(e.target.value.replace(/\D/g, ''))}
-              placeholder="₹/month"
-              className="px-3.5 py-2.5 bg-[#0a2018] border border-[#1f4a38] rounded-[8px] text-[13px] text-white focus:outline-none focus:border-[#0F6E56]"
-            />
+          <div>
+            <label className="block text-[11px] font-semibold text-[#9fd8bc] mb-1.5">
+              Specs <span className="text-[#6aaa88] font-normal">(one per line, e.g. "48 km range", "Dual disc brakes")</span>
+            </label>
+            {specs.map((spec, i) => (
+              <div key={i} className="flex gap-2 mb-1.5">
+                <input
+                  value={spec}
+                  onChange={(e) => {
+                    const updated = [...specs];
+                    updated[i] = e.target.value;
+                    setSpecs(updated);
+                  }}
+                  placeholder={`Spec ${i + 1}`}
+                  className="flex-1 px-3.5 py-2 bg-[#0a2018] border border-[#1f4a38] rounded-[8px] text-[13px] text-white focus:outline-none focus:border-[#0F6E56]"
+                />
+                {specs.length > 1 && (
+                  <button
+                    onClick={() => setSpecs(specs.filter((_, j) => j !== i))}
+                    className="text-[#f5b0b0] text-[18px] px-2 hover:text-white"
+                  >×</button>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={() => setSpecs([...specs, ''])}
+              className="text-[11px] text-[#7adbb4] hover:underline mt-0.5"
+            >+ Add spec</button>
           </div>
           <input
             value={totalUnits}

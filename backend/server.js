@@ -45,6 +45,8 @@ if (razorpayKeyId && razorpayKeySecret) {
     key_secret: razorpayKeySecret
   });
   console.log('Razorpay Client initialized successfully!');
+  console.log(`Razorpay Key ID prefix: ${razorpayKeyId.slice(0, 14)}... (${razorpayKeyId.length} chars)`);
+  console.log(`Razorpay Secret length: ${razorpayKeySecret.length} chars`);
 } else {
   console.warn('WARNING: Razorpay credentials are missing in your .env file. Payments will fallback to mock simulation.');
 }
@@ -195,11 +197,15 @@ app.post('/api/login', async (req, res) => {
 // 2. Booking API with Aadhaar Upload to Supabase Storage and mappings to bikes & plans tables
 app.post('/api/bookings', upload.single('aadhaar'), async (req, res) => {
   try {
-    const { name, dob, phone, bike, plan, date, payment_id } = req.body;
+    const { name, dob, phone, bike, plan, date, payment_id, aadhaar_already_verified } = req.body;
     const file = req.file;
-    
-    if (!phone || !bike || !plan || !date || !file) {
-      return res.status(400).json({ error: 'Phone, bike model, plan, rental start date, and Aadhaar document are required.' });
+    const isAadhaarVerified = aadhaar_already_verified === 'true';
+
+    if (!phone || !bike || !plan || !date) {
+      return res.status(400).json({ error: 'Phone, bike model, plan, and rental start date are required.' });
+    }
+    if (!isAadhaarVerified && !file) {
+      return res.status(400).json({ error: 'Aadhaar document is required for new customers.' });
     }
 
     // 1. Normalize phone and find user
@@ -220,39 +226,43 @@ app.post('/api/bookings', upload.single('aadhaar'), async (req, res) => {
     const user = users[0];
     const userId = user.id;
 
-    // 2. Upload File to Supabase Storage inside the "aadhaar-docs" bucket
-    const fileExtension = file.originalname.split('.').pop();
-    const fileName = `${userId}-${Date.now()}.${fileExtension}`;
-    const filePath = `aadhaar_uploads/${fileName}`;
+    // 2 & 3. Upload Aadhaar only for new customers — skip for already-verified users
+    if (isAadhaarVerified) {
+      // Just update name/dob, leave aadhaar fields untouched
+      await supabase
+        .from('users')
+        .update({ name: name || user.name, date_of_birth: dob || user.date_of_birth })
+        .eq('id', userId);
+    } else {
+      const fileExtension = file.originalname.split('.').pop();
+      const fileName = `${userId}-${Date.now()}.${fileExtension}`;
+      const filePath = `aadhaar_uploads/${fileName}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('aadhaar-docs')
-      .upload(filePath, file.buffer, {
-        contentType: file.mimetype,
-        upsert: true
-      });
+      const { error: uploadError } = await supabase.storage
+        .from('aadhaar-docs')
+        .upload(filePath, file.buffer, { contentType: file.mimetype, upsert: true });
 
-    if (uploadError) {
-      console.error('Supabase Storage Upload Error:', uploadError);
-      return res.status(500).json({ error: 'Failed to upload document to Supabase Storage.' });
-    }
+      if (uploadError) {
+        console.error('Supabase Storage Upload Error:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload document to Supabase Storage.' });
+      }
 
-    // 3. Update User Profile with Aadhaar & Date of Birth details
-    const { error: userUpdateError } = await supabase
-      .from('users')
-      .update({
-        name: name || user.name,
-        date_of_birth: dob || user.date_of_birth,
-        aadhaar_file_path: filePath,
-        aadhaar_submitted_at: new Date().toISOString(),
-        aadhaar_status: 'pending',
-        aadhaar_verified: false
-      })
-      .eq('id', userId);
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({
+          name: name || user.name,
+          date_of_birth: dob || user.date_of_birth,
+          aadhaar_file_path: filePath,
+          aadhaar_submitted_at: new Date().toISOString(),
+          aadhaar_status: 'pending',
+          aadhaar_verified: false
+        })
+        .eq('id', userId);
 
-    if (userUpdateError) {
-      console.error('Failed to update user profile:', userUpdateError);
-      return res.status(500).json({ error: 'Failed to update user profile details.' });
+      if (userUpdateError) {
+        console.error('Failed to update user profile:', userUpdateError);
+        return res.status(500).json({ error: 'Failed to update user profile details.' });
+      }
     }
 
     // 4. Resolve bike UUID
@@ -301,12 +311,12 @@ app.post('/api/bookings', upload.single('aadhaar'), async (req, res) => {
         plan_id: planRow.id,
         start_date: date,
         end_date: end_date,
-        status: 'active',
+        status: 'pending',
         rental_amount,
         deposit_amount,
         platform_fee,
         total_paid,
-        payment_id: payment_id || 'pay_simulated'
+        payment_id: null
       }])
       .select()
       .single();
@@ -316,24 +326,14 @@ app.post('/api/bookings', upload.single('aadhaar'), async (req, res) => {
       return res.status(500).json({ error: 'Failed to register the booking.' });
     }
 
-    // 8. Insert Deposit Log
-    const { error: depositInsertError } = await supabase
-      .from('deposits')
-      .insert([{
-        booking_id: bookingData.id,
-        user_id: userId,
-        amount: deposit_amount,
-        status: 'held'
-      }]);
-
-    if (depositInsertError) {
-      console.error('Warning: Failed to create deposit record:', depositInsertError);
-    }
+    // Deposit record is created after payment is confirmed, not here.
+    // See handleVerifyPayment → createDepositAfterPayment.
 
     return res.status(201).json({
       success: true,
       message: 'Booking successful',
-      bookingId: bookingData.id
+      bookingId: bookingData.id,
+      bookingRef: bookingData.booking_ref
     });
   } catch (error) {
     console.error('Server Error:', error);
@@ -419,18 +419,58 @@ const handleVerifyPayment = async (req, res) => {
       return res.status(400).json({ error: 'Missing required payment details.' });
     }
 
+    // Helper: create deposit record now that payment is confirmed
+    const createDepositAfterPayment = async (bId) => {
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select('user_id, deposit_amount')
+        .eq('id', bId)
+        .single();
+      if (!booking) return;
+
+      await supabase.from('deposits').insert([{
+        booking_id: bId,
+        user_id: booking.user_id,
+        amount: booking.deposit_amount,
+        status: 'held'
+      }]);
+    };
+
+    // Helper: decrement available_units for the bike in this booking
+    const decrementBikeAvailability = async (bId) => {
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select('bike_id')
+        .eq('id', bId)
+        .single();
+      if (!booking?.bike_id) return;
+
+      const { data: bike } = await supabase
+        .from('bikes')
+        .select('available_units')
+        .eq('id', booking.bike_id)
+        .single();
+      if (!bike) return;
+
+      const newAvailable = Math.max(0, bike.available_units - 1);
+      await supabase
+        .from('bikes')
+        .update({ available_units: newAvailable })
+        .eq('id', booking.bike_id);
+    };
+
     // 1. If it was a mock payment, verify immediately
     if (orderId.startsWith('order_mock_')) {
       console.log(`[MOCK PAYMENT] Mock verifying payment for booking ${bookingId}`);
-      
+
       const { error: updateError } = await supabase
         .from('bookings')
-        .update({
-          payment_id: paymentId
-        })
+        .update({ payment_id: paymentId, status: 'active' })
         .eq('id', bookingId);
 
       if (updateError) throw updateError;
+      await createDepositAfterPayment(bookingId);
+      await decrementBikeAvailability(bookingId);
       return res.status(200).json({ success: true, message: 'Mock payment verified.' });
     }
 
@@ -448,9 +488,7 @@ const handleVerifyPayment = async (req, res) => {
     // 3. Update payment status in supabase
     const { error: updateError } = await supabase
       .from('bookings')
-      .update({
-        payment_id: paymentId
-      })
+      .update({ payment_id: paymentId, status: 'active' })
       .eq('id', bookingId);
 
     if (updateError) {
@@ -458,6 +496,8 @@ const handleVerifyPayment = async (req, res) => {
       throw updateError;
     }
 
+    await createDepositAfterPayment(bookingId);
+    await decrementBikeAvailability(bookingId);
     return res.status(200).json({ success: true, message: 'Payment verified and registered successfully.' });
   } catch (error) {
     console.error('Payment Verification Error:', error);

@@ -137,8 +137,9 @@ export default function WaitlistPage() {
                         </button>
                         <button
                           onClick={() => runAction('refund', e.id)}
-                          disabled={busyId === e.id}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-[#f5b0b0] border border-[#3a1414] rounded-[6px] hover:bg-[#3a1414] disabled:opacity-50"
+                          disabled={busyId === e.id || !e.payment_id}
+                          title={!e.payment_id ? 'No advance payment on file' : 'Refund advance deposit'}
+                          className="px-2.5 py-1 text-[11px] font-semibold text-[#f5b0b0] border border-[#3a1414] rounded-[6px] hover:bg-[#3a1414] disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           Refund
                         </button>

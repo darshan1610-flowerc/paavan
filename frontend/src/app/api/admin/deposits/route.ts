@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       .from('deposits')
       .select(
         'id, amount, status, return_video_path, submitted_at, window_closes_at, reviewed_at, notes, ' +
-          'booking_id, user_id, bookings(booking_ref), users(name, phone, aadhaar_status)'
+          'booking_id, user_id, bookings(booking_ref), users!deposits_user_id_fkey(name, phone, aadhaar_status)'
       )
       .eq('status', status)
       .order('window_closes_at', { ascending: true });

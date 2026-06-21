@@ -45,8 +45,7 @@ const steps = [
   'Verify your phone number via OTP',
   'Fill your details and upload Aadhaar card',
   'Pay via UPI, card, or net banking',
-  'Receive your daily unlock code every morning',
-  'Return the bike with a short video — deposit refunded in 24 hrs',
+  'Return the bike to the shop with a short condition video — deposit refunded in 24 hrs',
 ];
 
 export default function AboutPage() {

@@ -48,7 +48,7 @@ export default function VideoShowcase() {
           </h2>
           <p className="text-[13px] sm:text-[14px] text-[#9fd8bc] leading-[1.75] mb-7 sm:mb-8 max-w-[400px]">
             Our e-bikes aren't just fast — they're built for the campus life. Removable battery,
-            smart lock, daily code, and a team that actually cares.
+            key-based lock, pedal assist, and a team that actually cares.
           </p>
 
           <div className="space-y-3 sm:space-y-4 mb-7 sm:mb-8">

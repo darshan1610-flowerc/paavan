@@ -56,7 +56,7 @@ const PLANS = [
     duration: '1 day',
     tag: 'Students',
     tagVariant: 'student' as const,
-    features: ['1 day rental', 'Standard bike', 'Daily unlock code', 'Helmet included', '+ ₹1,000 deposit'],
+    features: ['1 day rental', 'Standard bike', 'Key-based lock', 'Helmet included', '+ ₹1,000 deposit'],
   },
   {
     id: 'weekly',
@@ -172,7 +172,7 @@ export default function PlansPage() {
             {selectedBike ? (
               <>Booking for: <strong className="text-[#0F6E56]">{selectedBike.name}</strong> · </>
             ) : null}
-            All plans include helmet, daily unlock code &amp; on-call campus maintenance
+            All plans include helmet, key-based lock &amp; on-call campus maintenance
           </p>
         </div>
 

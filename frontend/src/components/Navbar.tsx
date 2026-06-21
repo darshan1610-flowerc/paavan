@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
+import EBikeGuide from './EBikeGuide';
 
 gsap.registerPlugin(useGSAP);
 
@@ -17,6 +18,7 @@ const navLinks = [
 export default function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -38,6 +40,7 @@ export default function Navbar() {
   }`;
 
   return (
+    <>
     <nav ref={navRef} className={baseNav}>
 
       {/* ── Row 1: Logo + Rent now ── */}
@@ -57,6 +60,12 @@ export default function Navbar() {
           {navLinks.map(({ href, label }) => (
             <NavLink key={href} href={href}>{label}</NavLink>
           ))}
+          <button
+            onClick={() => setGuideOpen(true)}
+            className="px-3.5 py-2 rounded-[8px] text-[13px] font-medium text-[#4a6054] hover:bg-[#EAF3DE] hover:text-[#085041] transition-all duration-150"
+          >
+            E-Bike Guide
+          </button>
           <Link
             href="/bikes"
             className="ml-3 px-4 py-2 bg-[#0F6E56] text-white text-[13px] font-semibold rounded-[8px] hover:bg-[#085041] active:scale-95 transition-all duration-150 shadow-[0_2px_10px_rgba(15,110,86,0.28)]"
@@ -86,10 +95,19 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+          <button
+            onClick={() => setGuideOpen(true)}
+            className="flex items-center px-3.5 text-[12px] font-semibold text-[#4a6054] hover:text-[#0F6E56] hover:bg-[#f4faf1] rounded-[6px] whitespace-nowrap transition-colors"
+          >
+            E-Bike Guide
+          </button>
         </div>
       </div>
 
     </nav>
+
+    <EBikeGuide isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
+    </>
   );
 }
 

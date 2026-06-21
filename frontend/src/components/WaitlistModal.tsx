@@ -4,16 +4,19 @@ import { useRef, useState, useEffect } from 'react';
 import { gsap } from 'gsap';
 
 interface WaitlistModalProps {
+  bikeId: string;
   bikeName: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function WaitlistModal({ bikeName, isOpen, onClose }: WaitlistModalProps) {
+export default function WaitlistModal({ bikeId, bikeName, isOpen, onClose }: WaitlistModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const [phone, setPhone] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [position, setPosition] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -24,8 +27,9 @@ export default function WaitlistModal({ bikeName, isOpen, onClose }: WaitlistMod
       }
     } else {
       document.body.style.overflow = '';
-      setSubmitted(false);
       setPhone('');
+      setPosition(null);
+      setError('');
     }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
@@ -36,6 +40,29 @@ export default function WaitlistModal({ bikeName, isOpen, onClose }: WaitlistMod
       gsap.to(overlayRef.current, { opacity: 0, duration: 0.25, ease: 'power2.in', delay: 0.05, onComplete: onClose });
     } else {
       onClose();
+    }
+  };
+
+  const handleJoin = async () => {
+    if (phone.length !== 10) return;
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('/api/waitlist/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, bikeId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to join waitlist');
+        return;
+      }
+      setPosition(data.position);
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -58,7 +85,7 @@ export default function WaitlistModal({ bikeName, isOpen, onClose }: WaitlistMod
           </svg>
         </button>
 
-        {!submitted ? (
+        {position === null ? (
           <>
             <div className="w-16 h-16 bg-[#FAEEDA] rounded-full flex items-center justify-center mx-auto mb-5">
               <svg className="w-8 h-8 stroke-[#854F0B] fill-none" strokeWidth="1.8" viewBox="0 0 24 24">
@@ -69,15 +96,11 @@ export default function WaitlistModal({ bikeName, isOpen, onClose }: WaitlistMod
               {bikeName} is currently unavailable
             </h2>
             <p className="text-[13px] text-[#7a9080] text-center leading-relaxed mb-6">
-              Join our priority waitlist — pay ₹500 advance deposit and we'll notify you first when
-              this bike is back in stock. <strong className="text-[#04342C]">100% refundable</strong> if
-              you change your mind.
+              Join our priority waitlist for free — we'll notify you first when this bike is back in stock.
             </p>
 
             <div className="mb-4">
-              <label className="block text-[12px] font-semibold text-[#5a7060] mb-1.5">
-                Phone number
-              </label>
+              <label className="block text-[12px] font-semibold text-[#5a7060] mb-1.5">Phone number</label>
               <input
                 type="tel"
                 value={phone}
@@ -87,17 +110,17 @@ export default function WaitlistModal({ bikeName, isOpen, onClose }: WaitlistMod
               />
             </div>
 
+            {error && (
+              <p className="text-[12px] text-[#A32D2D] mb-3 bg-[#FCEBEB] px-3 py-2 rounded-[8px]">{error}</p>
+            )}
+
             <button
-              onClick={() => phone.length === 10 && setSubmitted(true)}
-              disabled={phone.length !== 10}
+              onClick={handleJoin}
+              disabled={phone.length !== 10 || submitting}
               className="w-full py-3.5 bg-[#0F6E56] text-white text-[14px] font-bold rounded-[8px] hover:bg-[#085041] active:scale-[0.98] transition-all shadow-[0_4px_14px_rgba(15,110,86,0.3)] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none mb-3"
             >
-              Pay ₹500 advance & join priority list
+              {submitting ? 'Joining waitlist...' : 'Join priority waitlist →'}
             </button>
-
-            <p className="text-center text-[12px] text-[#0F6E56] cursor-pointer hover:text-[#085041] transition-colors">
-              Already on the list? Check your status →
-            </p>
           </>
         ) : (
           <>
@@ -109,9 +132,11 @@ export default function WaitlistModal({ bikeName, isOpen, onClose }: WaitlistMod
             <h2 className="font-display text-[22px] text-[#04342C] text-center mb-2">
               You're on the list! 🎉
             </h2>
-            <p className="text-[13px] text-[#7a9080] text-center leading-relaxed mb-6">
-              We'll notify you on <strong className="text-[#04342C]">{phone}</strong> as soon as the{' '}
-              {bikeName} is back in stock. You're first in line.
+            <p className="text-[13px] text-[#7a9080] text-center leading-relaxed mb-2">
+              You're <strong className="text-[#04342C]">#{position}</strong> in the queue for <strong className="text-[#04342C]">{bikeName}</strong>.
+            </p>
+            <p className="text-[12px] text-[#7a9080] text-center leading-relaxed mb-6">
+              We'll notify <strong className="text-[#04342C]">+91 {phone}</strong> as soon as it's back in stock.
             </p>
             <button
               onClick={handleClose}

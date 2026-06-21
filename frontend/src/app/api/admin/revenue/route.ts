@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
       supabase
         .from('bookings')
         .select('bike_id, rental_amount, platform_fee, created_at, plans(type)')
+        .in('status', ['active', 'completed'])
         .gte('created_at', since.toISOString()),
       supabase
         .from('deposits')

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import AdminShell from '@/components/admin/AdminShell';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -15,10 +16,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     redirect('/admin/login');
   }
 
-  const { data: profile } = await supabase.from('users').select('role, phone').eq('id', user.id).single();
+  const { data: profile } = await createAdminClient().from('users').select('role').eq('id', user.id).single();
   if (profile?.role !== 'admin') {
     redirect('/');
   }
+
+  // Extract the real phone from the auth email (format: <phone>@admin.paavan.internal)
+  const adminPhone = user.email?.split('@')[0] ?? '';
 
   const { count } = await supabase
     .from('deposits')
@@ -26,7 +30,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('status', 'pending_review');
 
   return (
-    <AdminShell adminPhone={profile.phone} pendingDepositsCount={count ?? 0}>
+    <AdminShell adminPhone={adminPhone} pendingDepositsCount={count ?? 0}>
       {children}
     </AdminShell>
   );
