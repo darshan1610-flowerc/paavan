@@ -681,6 +681,10 @@ app.post('/api/deposits/submit-return', upload.single('video'), async (req, res)
   }
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get('/', (req, res) => {
   res.send('<h1>PAAVAN Go Electric Backend is Running with Supabase!</h1>');
 });
