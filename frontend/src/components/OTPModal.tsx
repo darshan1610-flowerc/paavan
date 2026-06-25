@@ -19,6 +19,7 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
   const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [timer, setTimer] = useState(30);
 
   useEffect(() => {
     if (overlayRef.current && cardRef.current) {
@@ -26,6 +27,16 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
       gsap.fromTo(cardRef.current, { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.45, ease: 'power3.out', delay: 0.1 });
     }
   }, []);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (step === 'otp' && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [step, timer]);
 
   const handleSendOTP = async () => {
     if (phone.length !== 10) {
@@ -44,6 +55,7 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
       const data = await response.json();
       if (response.ok) {
         setStep('otp');
+        setTimer(30);
       } else {
         setError(data.error || 'Failed to send OTP');
       }
@@ -124,7 +136,7 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               Verify your number
             </h2>
             <p className="text-[13px] text-[#7a9080] text-center mb-6">
-              We'll send a quick OTP to confirm your identity before booking.
+              We'll send a quick OTP to your WhatsApp to confirm your identity before booking.
             </p>
 
             <label className="block text-[12px] font-semibold text-[#5a7060] mb-1.5">
@@ -152,7 +164,7 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               disabled={sending}
               className="w-full py-3 bg-[#0F6E56] text-white text-[14px] font-bold rounded-[8px] hover:bg-[#085041] active:scale-[0.98] transition-all shadow-[0_4px_14px_rgba(15,110,86,0.3)] disabled:opacity-60"
             >
-              {sending ? 'Sending OTP...' : 'Send OTP →'}
+              {sending ? 'Sending OTP...' : 'Send OTP via WhatsApp →'}
             </button>
 
             <p className="text-center text-[11px] text-[#9ab09a] mt-4">
@@ -167,7 +179,7 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               Enter OTP
             </h2>
             <p className="text-[13px] text-[#7a9080] text-center mb-6">
-              Sent to <strong className="text-[#04342C]">+91 {phone}</strong>
+              Sent via WhatsApp to <strong className="text-[#04342C]">+91 {phone}</strong>
               <button onClick={() => setStep('phone')} className="ml-2 text-[#0F6E56] hover:underline text-[12px]">
                 Change
               </button>
@@ -196,9 +208,13 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               {sending ? 'Verifying...' : 'Verify & Continue →'}
             </button>
 
-            <div className="text-center mt-3">
-              <button className="text-[12px] text-[#0F6E56] hover:underline">
-                Resend OTP in 30s
+             <div className="text-center mt-3">
+              <button
+                disabled={timer > 0 || sending}
+                onClick={handleSendOTP}
+                className="text-[12px] text-[#0F6E56] hover:underline disabled:opacity-50 disabled:no-underline"
+              >
+                {timer > 0 ? `Resend OTP in ${timer}s` : 'Resend OTP'}
               </button>
             </div>
 

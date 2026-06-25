@@ -47,12 +47,28 @@ function formatPhoneForTwilio(phone: string): string {
   return formatted;
 }
 
-// Sends a numeric OTP via SMS. First tries Twilio if configured, then falls back to MSG91, 
-// and finally defaults to a console log.
+// Sends a numeric OTP via WhatsApp. First tries Interakt if configured, then Twilio WhatsApp,
+// then falls back to MSG91, and finally defaults to a console log.
 export async function sendOTP(phone: string, code: string): Promise<NotifyResult> {
   const message = `Your PAAVAN login OTP is ${code}. It is valid for 5 minutes.`;
 
-  // 1. Try Twilio if credentials are provided
+  // 1. Try Interakt WhatsApp if configured
+  if (isConfigured()) {
+    try {
+      const cleanPhone = phone.trim().replace(/\D/g, '');
+      const phone10 = cleanPhone.length === 10 ? cleanPhone : cleanPhone.slice(-10);
+      const res = await sendWhatsApp(phone10, message);
+      if (res.delivered) {
+        console.log(`[otp] Sent OTP via Interakt WhatsApp to ${phone10}`);
+        return { delivered: true };
+      }
+      console.error('[otp] Interakt send failed:', res.reason);
+    } catch (error) {
+      console.error('[otp] Interakt exception:', error);
+    }
+  }
+
+  // 2. Try Twilio WhatsApp if credentials are provided
   if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
     try {
       const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
@@ -64,8 +80,8 @@ export async function sendOTP(phone: string, code: string): Promise<NotifyResult
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          From: process.env.TWILIO_PHONE_NUMBER,
-          To: formattedPhone,
+          From: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
+          To: `whatsapp:${formattedPhone}`,
           Body: message,
         }),
       });
@@ -75,15 +91,14 @@ export async function sendOTP(phone: string, code: string): Promise<NotifyResult
         console.error('[otp] Twilio send failed:', errorData);
         return { delivered: false, reason: `twilio_error_${res.status}` };
       }
-      console.log(`[otp] Sent OTP via Twilio to ${formattedPhone}`);
+      console.log(`[otp] Sent OTP via Twilio WhatsApp to ${formattedPhone}`);
       return { delivered: true };
     } catch (error) {
       console.error('[otp] Twilio exception:', error);
-      return { delivered: false, reason: 'twilio_exception' };
     }
   }
 
-  // 2. Fallback to MSG91 if configured
+  // 3. Fallback to MSG91 if configured
   if (process.env.MSG91_API_KEY) {
     const res = await fetch('https://control.msg91.com/api/v5/otp', {
       method: 'POST',
@@ -105,8 +120,8 @@ export async function sendOTP(phone: string, code: string): Promise<NotifyResult
     return { delivered: true };
   }
 
-  // 3. Graceful fallback for local development
-  console.log(`[otp] No SMS provider configured — OTP for ${phone} is ${code}`);
+  // 4. Graceful fallback for local development
+  console.log(`[otp] No WhatsApp provider configured — OTP for ${phone} is ${code}`);
   return { delivered: false, reason: 'not_configured' };
 }
 

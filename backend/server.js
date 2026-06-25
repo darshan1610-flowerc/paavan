@@ -25,13 +25,16 @@ const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', 
 const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
 const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
+const interaktApiKey = process.env.INTERAKT_API_KEY;
 const Razorpay = require('razorpay');
 
 let twilioClient;
 if (twilioAccountSid && twilioAccountSid.startsWith('AC') && twilioAuthToken) {
   twilioClient = twilio(twilioAccountSid, twilioAuthToken);
-} else {
-  console.warn('WARNING: Twilio credentials are missing or invalid in your .env file. OTPs will not be sent via SMS.');
+}
+
+if (!interaktApiKey && !(twilioClient && twilioPhoneNumber)) {
+  console.warn('WARNING: Interakt API Key and Twilio credentials are missing or invalid in your .env file. OTPs will not be sent via WhatsApp.');
 }
 
 // Initialize Razorpay Client
@@ -57,35 +60,56 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Mock OTP Storage (phone -> { otp, expiresAt })
 const otpStore = new Map();
 
-// 1a. Send OTP API
+// 1a. Send OTP API (Sends WhatsApp OTP)
 app.post('/api/send-otp', async (req, res) => {
   const { phone } = req.body;
   if (!phone) {
     return res.status(400).json({ error: 'Phone number is required.' });
   }
 
-  // Format phone number for Twilio (assumes India +91 if exactly 10 digits without country code)
-  let formattedPhone = phone.trim();
-  if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
-    formattedPhone = '+91' + formattedPhone;
-  } else if (!formattedPhone.startsWith('+')) {
-    formattedPhone = '+' + formattedPhone;
-  }
+  // Extract clean 10-digit number for Interakt/Twilio
+  const cleanPhone = phone.trim().replace(/\D/g, '');
+  const phone10 = cleanPhone.length === 10 ? cleanPhone : cleanPhone.slice(-10);
+  const formattedPhone = '+91' + phone10;
 
   // Generate 4-digit OTP
   const otp = Math.floor(1000 + Math.random() * 9000).toString();
   otpStore.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 }); // Expires in 5 mins
 
   try {
-    if (twilioClient && twilioPhoneNumber) {
-      await twilioClient.messages.create({
-        body: `Your PAAVAN Go Electric login OTP is ${otp}. It is valid for 5 minutes.`,
-        from: twilioPhoneNumber,
-        to: formattedPhone
+    const message = `Your PAAVAN Go Electric login OTP is ${otp}. It is valid for 5 minutes.`;
+
+    if (interaktApiKey) {
+      // 1. Try sending via Interakt WhatsApp API
+      const response = await fetch('https://api.interakt.ai/v1/public/message/', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${interaktApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          countryCode: '+91',
+          phoneNumber: phone10,
+          type: 'Text',
+          data: { message },
+        }),
       });
-      console.log(`[TWILIO OTP] Sent OTP to ${formattedPhone}`);
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Interakt API error: ${response.status} - ${errText}`);
+      }
+      console.log(`[INTERAKT WHATSAPP OTP] Sent OTP to ${phone10}`);
+    } else if (twilioClient && twilioPhoneNumber) {
+      // 2. Try sending via Twilio WhatsApp API
+      await twilioClient.messages.create({
+        body: message,
+        from: `whatsapp:${twilioPhoneNumber}`,
+        to: `whatsapp:${formattedPhone}`
+      });
+      console.log(`[TWILIO WHATSAPP OTP] Sent OTP to ${formattedPhone}`);
     } else {
-      console.log(`[MOCK OTP] Generated OTP ${otp} for phone ${phone}. (Add Twilio keys to .env to send real SMS)`);
+      // 3. Fallback to mock log
+      console.log(`[MOCK OTP] Generated OTP ${otp} for phone ${phone}. (Add Interakt/Twilio keys to .env to send real WhatsApp OTP)`);
     }
 
     return res.status(200).json({ 
@@ -93,8 +117,8 @@ app.post('/api/send-otp', async (req, res) => {
       message: 'OTP sent successfully.'
     });
   } catch (error) {
-    console.error('Twilio Error:', error);
-    return res.status(500).json({ error: 'Failed to send SMS. Please check the phone number and try again.' });
+    console.error('OTP Send Error:', error);
+    return res.status(500).json({ error: 'Failed to send WhatsApp OTP. Please check the phone number and try again.' });
   }
 });
 
