@@ -19,7 +19,6 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
   const [otp, setOtp] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
-  const [timer, setTimer] = useState(30);
 
   useEffect(() => {
     if (overlayRef.current && cardRef.current) {
@@ -28,96 +27,41 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
     }
   }, []);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (step === 'otp' && timer > 0) {
-      interval = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [step, timer]);
-
-  const handleSendOTP = async () => {
+  const handleSendOTP = () => {
     if (phone.length !== 10) {
       setError('Please enter a valid 10-digit phone number');
       return;
     }
     setError('');
     setSending(true);
-    try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setStep('otp');
-        setTimer(30);
-      } else {
-        setError(data.error || 'Failed to send OTP');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Connection error. Is the backend running?');
-    } finally {
+    setTimeout(() => {
       setSending(false);
-    }
+      setStep('otp');
+    }, 800);
   };
 
-  const handleVerifyOTP = async () => {
+  const handleVerifyOTP = () => {
     if (otp.length !== 4 && otp.length !== 6) {
       setError('Please enter the OTP sent to your phone');
       return;
     }
     setError('');
     setSending(true);
-    try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-      const response = await fetch(`${backendUrl}/api/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp, name: 'User' }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        // Save auth data
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userPhone', phone);
-        if (data.user) {
-          localStorage.setItem('userId', data.user.id);
-          if (data.user.name) {
-            localStorage.setItem('userName', data.user.name);
-          }
-          if (data.user.date_of_birth) {
-            localStorage.setItem('userDob', data.user.date_of_birth);
-          }
-          localStorage.setItem('aadhaarVerified', data.user.aadhaar_verified ? 'true' : 'false');
-        }
-
-        const isReturning = data.existing === true && data.user?.aadhaar_verified === true;
-        if (cardRef.current && overlayRef.current) {
-          gsap.to(cardRef.current, {
-            y: -20,
-            opacity: 0,
-            duration: 0.3,
-            ease: 'power2.in',
-            onComplete: () => onVerified(isReturning, phone),
-          });
-        } else {
-          onVerified(isReturning, phone);
-        }
-      } else {
-        setError(data.error || 'Invalid OTP');
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Connection error. Is the backend running?');
-    } finally {
+    setTimeout(() => {
       setSending(false);
-    }
+      const isReturning = phone === RETURNING_PHONE;
+      if (cardRef.current && overlayRef.current) {
+        gsap.to(cardRef.current, {
+          y: -20,
+          opacity: 0,
+          duration: 0.3,
+          ease: 'power2.in',
+          onComplete: () => onVerified(isReturning, phone),
+        });
+      } else {
+        onVerified(isReturning, phone);
+      }
+    }, 900);
   };
 
   return (
@@ -136,7 +80,7 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               Verify your number
             </h2>
             <p className="text-[13px] text-[#7a9080] text-center mb-6">
-              We'll send a quick OTP to your WhatsApp to confirm your identity before booking.
+              We'll send a quick OTP to confirm your identity before booking.
             </p>
 
             <label className="block text-[12px] font-semibold text-[#5a7060] mb-1.5">
@@ -164,12 +108,9 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               disabled={sending}
               className="w-full py-3 bg-[#0F6E56] text-white text-[14px] font-bold rounded-[8px] hover:bg-[#085041] active:scale-[0.98] transition-all shadow-[0_4px_14px_rgba(15,110,86,0.3)] disabled:opacity-60"
             >
-              {sending ? 'Sending OTP...' : 'Send OTP via WhatsApp →'}
+              {sending ? 'Sending OTP...' : 'Send OTP →'}
             </button>
 
-            <p className="text-center text-[11px] text-[#9ab09a] mt-4">
-              🔒 We never store or share your number
-            </p>
           </>
         )}
 
@@ -179,7 +120,7 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               Enter OTP
             </h2>
             <p className="text-[13px] text-[#7a9080] text-center mb-6">
-              Sent via WhatsApp to <strong className="text-[#04342C]">+91 {phone}</strong>
+              Sent to <strong className="text-[#04342C]">+91 {phone}</strong>
               <button onClick={() => setStep('phone')} className="ml-2 text-[#0F6E56] hover:underline text-[12px]">
                 Change
               </button>
@@ -208,13 +149,9 @@ export default function OTPModal({ onVerified }: OTPModalProps) {
               {sending ? 'Verifying...' : 'Verify & Continue →'}
             </button>
 
-             <div className="text-center mt-3">
-              <button
-                disabled={timer > 0 || sending}
-                onClick={handleSendOTP}
-                className="text-[12px] text-[#0F6E56] hover:underline disabled:opacity-50 disabled:no-underline"
-              >
-                {timer > 0 ? `Resend OTP in ${timer}s` : 'Resend OTP'}
+            <div className="text-center mt-3">
+              <button className="text-[12px] text-[#0F6E56] hover:underline">
+                Resend OTP in 30s
               </button>
             </div>
 

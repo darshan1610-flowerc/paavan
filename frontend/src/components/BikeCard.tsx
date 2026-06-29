@@ -6,7 +6,6 @@ import { gsap } from 'gsap';
 interface BikeCardProps {
   id: string;
   name: string;
-  description?: string;
   tag?: string;
   specs: string[];
   inStock: boolean;
@@ -35,7 +34,6 @@ function BikeSVG({ color }: { color: string }) {
 
 export default function BikeCard({
   name,
-  description,
   tag,
   specs,
   inStock,
@@ -81,19 +79,17 @@ export default function BikeCard({
   return (
     <div
       ref={cardRef}
-      className={`bike-card rounded-2xl overflow-hidden transition-shadow duration-200 ${
+      className={`bike-card bg-white border rounded-2xl overflow-hidden shadow-[0_2px_10px_rgba(0,0,0,0.05)] transition-shadow duration-200 cursor-pointer ${
         inStock
-          ? 'bg-white border border-[#cce0cc] shadow-[0_2px_10px_rgba(0,0,0,0.05)] cursor-pointer hover:shadow-[0_8px_30px_rgba(15,110,86,0.12)] hover:border-[#0F6E56]'
-          : 'bg-[#f5f5f5] border border-[#d0d0d0] shadow-[0_2px_6px_rgba(0,0,0,0.04)] cursor-pointer'
+          ? 'border-[#cce0cc] hover:shadow-[0_8px_30px_rgba(15,110,86,0.12)] hover:border-[#0F6E56]'
+          : 'border-[#d0d0d0]'
       }`}
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Image */}
-      <div className="aspect-[8/5] flex items-center justify-center relative overflow-hidden"
-        style={{ background: inStock ? '#F4FAF1' : '#e8e8e8' }}
-      >
+      <div className={`aspect-[8/5] flex items-center justify-center relative overflow-hidden ${inStock ? 'bg-[#F4FAF1]' : 'bg-[#e8e8e8]'}`}>
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -107,7 +103,7 @@ export default function BikeCard({
               objectPosition: 'center',
               display: 'block',
               filter: inStock ? 'none' : 'grayscale(100%)',
-              opacity: inStock ? 1 : 0.55,
+              transition: 'filter 0.3s ease',
             }}
           />
         ) : (
@@ -119,14 +115,14 @@ export default function BikeCard({
           className={`absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold backdrop-blur-sm ${
             inStock
               ? 'bg-[#b8e09a]/90 text-[#163a02]'
-              : 'bg-black/70 text-white'
+              : 'bg-[#f5b0b0]/90 text-[#520f0f]'
           }`}
         >
           {inStock ? `${units ?? 0} units left` : 'Out of stock'}
         </span>
 
-        {/* Tag */}
-        {tag && inStock && (
+        {/* Optional tag (e.g. "Most Popular") */}
+        {tag && (
           <span className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#0F6E56] text-white">
             {tag}
           </span>
@@ -135,52 +131,36 @@ export default function BikeCard({
 
       {/* Body */}
       <div className="p-4">
-        <h3 className={`text-[15px] font-bold mb-1 ${inStock ? 'text-[#04342C]' : 'text-[#555]'}`}>{name}</h3>
-        {description && (
-          <p className={`text-[11px] leading-[1.6] mb-2 ${inStock ? 'text-[#7a9080]' : 'text-[#999]'}`}>{description}</p>
-        )}
+        <h3 className="text-[15px] font-bold text-[#04342C] mb-2">{name}</h3>
 
-        {inStock ? (
-          <ul className="space-y-1 mb-3">
-            {specs.map((s, i) => (
-              <li key={i} className="flex items-start gap-1.5 text-[11.5px] text-[#5a7a6a] leading-[1.6]">
-                <span className="text-[#1D9E75] mt-[2px] flex-shrink-0">✓</span>
-                {s}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <>
-            <ul className="space-y-1 mb-3">
-              {specs.map((s, i) => (
-                <li key={i} className="flex items-start gap-1.5 text-[11.5px] text-[#aaa] leading-[1.6]">
-                  <span className="text-[#bbb] mt-[2px] flex-shrink-0">✓</span>
-                  {s}
-                </li>
-              ))}
-            </ul>
-            <div className="bg-[#eeeeee] border border-[#d8d8d8] rounded-[8px] px-3 py-2.5 mb-3">
-              <div className="text-[12px] font-bold text-[#444] mb-0.5">⏳ Currently unavailable</div>
-              <div className="text-[11px] text-[#777] leading-relaxed">
-                Register your interest for free — we'll notify you the moment it's back in stock.
-              </div>
-            </div>
-          </>
+        <ul className="space-y-1 mb-3">
+          {specs.map((s, i) => (
+            <li key={i} className="flex items-start gap-1.5 text-[11.5px] text-[#5a7a6a] leading-[1.6]">
+              <span className="text-[#1D9E75] mt-[2px] flex-shrink-0">✓</span>
+              {s}
+            </li>
+          ))}
+        </ul>
+
+        {!inStock && (
+          <div className="text-[11px] text-[#854F0B] mb-2 font-semibold">
+            🔧 Back in approximately 10 days
+          </div>
         )}
 
         <button
           style={{
             width: '100%',
             marginTop: '4px',
-            padding: '9px 0',
+            padding: '8px 0',
             fontSize: '12px',
             fontWeight: 700,
             borderRadius: '8px',
-            border: inStock ? `1.5px solid ${accentColor}` : '1.5px solid #888',
-            color: inStock ? accentColor : '#fff',
-            background: inStock ? 'transparent' : '#555',
+            border: `1.5px solid ${inStock ? accentColor : '#ccc'}`,
+            color: inStock ? accentColor : '#888',
+            background: 'transparent',
             cursor: 'pointer',
-            transition: 'background 0.15s, color 0.15s',
+            transition: 'background 0.15s',
           }}
           onClick={(e) => { e.stopPropagation(); handleClick(); }}
         >

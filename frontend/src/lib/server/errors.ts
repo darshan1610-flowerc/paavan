@@ -40,6 +40,12 @@ export function handleApiError(error: unknown) {
     );
   }
 
+  // Surface Supabase / PostgrestError messages so the client sees the real cause
+  if (error && typeof error === 'object' && 'message' in error) {
+    const msg = String((error as { message: unknown }).message);
+    console.error('[api] unhandled error', error);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
   console.error('[api] unhandled error', error);
   return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
 }

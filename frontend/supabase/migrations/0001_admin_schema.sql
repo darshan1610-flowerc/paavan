@@ -13,7 +13,6 @@ create table if not exists public.users (
   id uuid primary key references auth.users (id) on delete cascade,
   phone text unique not null,
   name text,
-  date_of_birth date,
   aadhaar_file_path text,
   aadhaar_submitted_at timestamptz,
   aadhaar_verified boolean not null default false,

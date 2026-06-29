@@ -7,6 +7,7 @@ import { useGSAP } from '@gsap/react';
 import StepIndicator from '@/components/StepIndicator';
 import PlanCard from '@/components/PlanCard';
 import Footer from '@/components/Footer';
+import { useBikeStock } from '@/lib/hooks/useBikeStock';
 
 gsap.registerPlugin(useGSAP);
 
@@ -17,142 +18,93 @@ const STEPS = [
   { label: 'Payment' },
 ];
 
-const PRICING_HIGHLIGHTS = [
-  {
-    perDay: 39,
-    label: 'per month',
-    price: '₹1,199',
-    period: 'monthly',
-    tag: 'Best value',
-    tagColor: '#b8e09a',
-    tagText: '#163a02',
-  },
-  {
-    perDay: 69,
-    label: 'per week',
-    price: '₹489',
-    period: 'weekly',
-    tag: 'Short-term',
-    tagColor: 'rgba(255,255,255,0.15)',
-    tagText: '#a8dfc4',
-  },
-  {
-    perDay: 99,
-    label: 'per day',
-    price: '₹99',
-    period: 'day pass',
-    tag: 'Try it out',
-    tagColor: 'rgba(255,255,255,0.15)',
-    tagText: '#a8dfc4',
-  },
+const BIKE_LIST = [
+  { name: 'Hero Sprint',    accent: '#4a5a2a' },
+  { name: 'Mach City',     accent: '#0F6E56' },
+  { name: 'Geekay',        accent: '#1D9E75' },
+  { name: 'Sturdy Austere',accent: '#085041' },
+  { name: 'Raleigh',       accent: '#1a56db' },
+  { name: 'Schnell',       accent: '#c0392b' },
+  { name: 'Urban Terrain', accent: '#6d28d9' },
+  { name: 'Hero Winn',     accent: '#0F6E56' },
+  { name: 'Nebzee Black',  accent: '#1a1a1a' },
+  { name: 'Nebzee Copper', accent: '#b45309' },
+  { name: 'Axiro Blue',    accent: '#1e40af' },
+  { name: 'Axiro Red',     accent: '#dc2626' },
 ];
 
-const PLANS = [
-  {
-    id: 'day',
-    name: 'Day pass',
-    price: 99,
-    unit: 'day',
-    duration: '1 day',
-    tag: 'Students',
-    tagVariant: 'student' as const,
-    features: ['1 day rental', 'Standard bike', 'Key-based lock', 'Helmet included', '+ ₹1,000 deposit'],
-  },
-  {
-    id: 'weekly',
-    name: 'Weekly',
-    price: 489,
-    unit: 'week',
-    duration: '7 days',
-    tag: 'Students',
-    tagVariant: 'student' as const,
-    dailyRate: 69,
-    features: ['7 days rental', '₹69/day effective', 'Standard support', 'Helmet included', '+ ₹1,000 deposit'],
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly',
-    price: 1199,
-    unit: 'month',
-    duration: '30 days',
-    tag: 'Students',
-    tagVariant: 'student' as const,
-    popular: true,
-    dailyRate: 39,
-    features: ['30 days rental', '₹39/day effective', 'Priority support', 'Free helmet + lock', '+ ₹1,000 deposit'],
-  },
-  {
-    id: 'delivery',
-    name: 'Delivery plan',
-    price: 2999,
-    unit: 'month',
-    duration: '30 days',
-    tag: 'Delivery partners',
-    tagVariant: 'delivery' as const,
-    features: ['100km+ range', 'Heavy-duty usage', 'Storage box included', 'Dedicated support', '+ ₹1,000 deposit'],
-  },
-];
-
-import { createClient } from '@/lib/supabase/client';
+function buildPlans(pricePerDay: number, pricePerWeek: number, pricePerMonth: number) {
+  return [
+    {
+      id: 'daily',
+      name: 'Day pass',
+      price: pricePerDay,
+      unit: 'day',
+      duration: '1 day',
+      tag: 'Students',
+      tagVariant: 'student' as const,
+      features: ['1 day rental', 'Daily unlock code', 'Helmet included', 'Standard support', '+ ₹1,000 deposit'],
+    },
+    {
+      id: 'weekly',
+      name: 'Weekly',
+      price: pricePerWeek,
+      unit: 'week',
+      duration: '7 days',
+      tag: 'Students',
+      tagVariant: 'student' as const,
+      dailyRate: Math.round(pricePerWeek / 7),
+      features: ['7 days rental', `₹${Math.round(pricePerWeek / 7)}/day effective`, 'Standard support', 'Helmet included', '+ ₹1,000 deposit'],
+    },
+    {
+      id: 'monthly',
+      name: 'Monthly',
+      price: pricePerMonth,
+      unit: 'month',
+      duration: '30 days',
+      tag: 'Students',
+      tagVariant: 'student' as const,
+      popular: true,
+      dailyRate: Math.round(pricePerMonth / 30),
+      features: ['30 days rental', `₹${Math.round(pricePerMonth / 30)}/day effective`, 'Priority support', 'Free helmet + lock', '+ ₹1,000 deposit'],
+    },
+  ];
+}
 
 export default function PlansPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [selectedBike, setSelectedBike] = useState<{ name: string } | null>(null);
-  const [plans, setPlans] = useState<any[]>(PLANS);
+  const [activeBikeName, setActiveBikeName] = useState(BIKE_LIST[0].name);
+  const liveStock = useBikeStock();
 
   useEffect(() => {
     const raw = localStorage.getItem('paavan_bike');
-    if (raw) setSelectedBike(JSON.parse(raw));
-
-    async function loadPlans() {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase.from('plans').select('*');
-        if (data && data.length > 0) {
-          const mapped = data.map(dbPlan => {
-            const existing = PLANS.find(p => p.name.toLowerCase() === dbPlan.name.toLowerCase());
-            return {
-              id: dbPlan.id,
-              name: dbPlan.name,
-              price: dbPlan.price,
-              unit: dbPlan.duration_days === 1 ? 'day' : dbPlan.duration_days === 7 ? 'week' : 'month',
-              duration: dbPlan.duration_days === 1 ? '1 day' : `${dbPlan.duration_days} days`,
-              tag: dbPlan.type === 'student' ? 'Students' : 'Delivery partners',
-              tagVariant: dbPlan.type as any,
-              dailyRate: Math.round(dbPlan.price / dbPlan.duration_days),
-              features: Array.isArray(dbPlan.features) ? dbPlan.features : (existing?.features || []),
-              popular: existing?.popular || false,
-            };
-          });
-          setPlans(mapped);
-        }
-      } catch (err) {
-        console.error('Error fetching plans from database:', err);
-      }
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.name) setActiveBikeName(parsed.name);
     }
-    loadPlans();
   }, []);
 
   useGSAP(
     () => {
-      gsap.from('.pricing-eyebrow', {
-        y: 16, opacity: 0, duration: 0.5, ease: 'power2.out', delay: 0.05,
-      });
-      gsap.from('.pricing-tagline', {
-        y: 24, opacity: 0, duration: 0.6, ease: 'power3.out', delay: 0.15,
-      });
-      gsap.from('.pricing-pill', {
-        y: 36, opacity: 0, stagger: 0.1, duration: 0.65, ease: 'back.out(1.4)', delay: 0.25,
-      });
-      gsap.from('.plan-card', {
-        y: 40, opacity: 0, stagger: 0.1, duration: 0.65, ease: 'power3.out', delay: 0.5,
-      });
+      gsap.from('.plan-card', { y: 40, opacity: 0, stagger: 0.1, duration: 0.65, ease: 'power3.out', delay: 0.2 });
     },
     { scope: containerRef }
   );
 
-  const handleSelectPlan = (plan: any) => {
+  const switchBike = (name: string) => {
+    const live = liveStock[name];
+    setActiveBikeName(name);
+    localStorage.setItem('paavan_bike', JSON.stringify({ id: live?.supabaseId ?? name, name }));
+  };
+
+  const bikeData = liveStock[activeBikeName];
+  const hasPricing = bikeData && (bikeData.pricePerDay > 0 || bikeData.pricePerWeek > 0 || bikeData.pricePerMonth > 0);
+  const plans = hasPricing
+    ? buildPlans(bikeData.pricePerDay, bikeData.pricePerWeek, bikeData.pricePerMonth)
+    : null;
+
+  const handleSelectPlan = (plan: ReturnType<typeof buildPlans>[number]) => {
     localStorage.setItem(
       'paavan_plan',
       JSON.stringify({ id: plan.id, name: plan.name, price: plan.price, duration: plan.duration })
@@ -162,76 +114,45 @@ export default function PlansPage() {
 
   return (
     <main className="min-h-screen">
-      <div ref={containerRef} className="max-w-[1000px] mx-auto px-6 py-10">
+      <div ref={containerRef} className="max-w-[900px] mx-auto px-6 py-10">
         <StepIndicator steps={STEPS} currentStep={2} />
 
         {/* Heading */}
-        <div className="mb-7">
+        <div className="mb-5">
           <h1 className="font-display text-[30px] text-[#04342C]">Choose your plan</h1>
           <p className="text-[13px] text-[#5a7a6a] mt-1.5">
-            {selectedBike ? (
-              <>Booking for: <strong className="text-[#0F6E56]">{selectedBike.name}</strong> · </>
-            ) : null}
-            All plans include helmet, key-based lock &amp; on-call campus maintenance
+            Pricing for <strong className="text-[#0F6E56]">{activeBikeName}</strong> · All plans include helmet, daily unlock code &amp; on-call support
           </p>
         </div>
 
-        {/* ── Pricing showcase ── */}
-        <div className="bg-[#04342C] rounded-2xl overflow-hidden mb-8 shadow-[0_8px_40px_rgba(4,52,44,0.18)]">
-
-          {/* Top banner */}
-          <div className="px-5 sm:px-7 pt-5 sm:pt-7 pb-4 sm:pb-5 border-b border-white/10">
-            <div className="pricing-eyebrow text-[10px] font-bold tracking-[1.5px] uppercase text-[#5db88a] mb-2">
-              Campus Commute — Simplified
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1 sm:gap-2">
-              <h2 className="pricing-tagline font-display text-[20px] sm:text-[26px] text-white leading-tight">
-                E-Bikes for the students,{' '}
-                <em className="italic text-[#7adbb4]">by the students</em>
-              </h2>
-              <div className="pricing-tagline text-[11px] text-[#6aaa88] shrink-0">
-                +91 63512-43422 · @paavan_go_electric
-              </div>
-            </div>
+        {/* Bike switcher */}
+        <div className="mb-8">
+          <div className="text-[10px] font-bold text-[#9ab09a] tracking-wider uppercase mb-2.5">
+            Switch bike to see different prices
           </div>
-
-          {/* Three pricing pills — 1 col on mobile, 3 col on sm+ */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 sm:divide-x divide-white/10 divide-y sm:divide-y-0">
-            {PRICING_HIGHLIGHTS.map((p) => (
-              <div key={p.perDay} className="pricing-pill px-5 py-5 sm:py-6 relative">
-                {/* Mobile: horizontal row layout */}
-                <div className="flex items-center justify-between sm:block">
-                  {/* Left side on mobile / centered on desktop */}
-                  <div className="sm:text-center">
-                    {p.tag === 'Best value' && (
-                      <div
-                        className="inline-block sm:block sm:mx-auto mb-2 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wide"
-                        style={{ background: p.tagColor, color: p.tagText }}
-                      >
-                        {p.tag}
-                      </div>
-                    )}
-                    <div className="flex items-start gap-0.5 sm:justify-center sm:mt-2">
-                      <span className="text-[14px] sm:text-[18px] font-bold text-[#7adbb4] mt-1">₹</span>
-                      <span className="text-[40px] sm:text-[52px] font-bold text-white leading-none">{p.perDay}</span>
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] font-bold tracking-[2px] uppercase text-[#5db88a]">
-                      per day
-                    </div>
-                  </div>
-
-                  {/* Right side on mobile / below on desktop */}
-                  <div className="text-right sm:text-center sm:mt-3 sm:pt-3 sm:border-t sm:border-white/10">
-                    <div className="text-[11px] sm:text-[13px] text-[#9fd8bc]">E-Bikes on rent at</div>
-                    <div className="text-[15px] sm:text-[16px] font-bold text-white mt-0.5">
-                      {p.price}
-                      <span className="text-[11px] sm:text-[12px] font-normal text-[#6aaa88] ml-1">/{p.label.split(' ')[1]}</span>
-                    </div>
-                    <div className="text-[10px] text-[#456a56] capitalize">{p.period} plan</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {BIKE_LIST.map((bike) => {
+              const isActive = bike.name === activeBikeName;
+              return (
+                <button
+                  key={bike.name}
+                  onClick={() => switchBike(bike.name)}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-[12px] font-semibold whitespace-nowrap flex-shrink-0 border transition-all ${
+                    isActive
+                      ? 'bg-[#04342C] text-white border-[#04342C] shadow-[0_2px_10px_rgba(4,52,44,0.2)]'
+                      : 'bg-white text-[#04342C] border-[#cce0cc] hover:border-[#0F6E56] hover:bg-[#EAF3DE]'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: bike.accent }} />
+                  {bike.name}
+                  {isActive && (
+                    <svg className="w-3 h-3 stroke-white fill-none flex-shrink-0" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -240,11 +161,26 @@ export default function PlansPage() {
           <div className="text-[11px] text-[#1D9E75] font-semibold tracking-[1px] uppercase mb-4">
             Select a plan to continue →
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {plans.map((plan) => (
-              <PlanCard key={plan.id} {...plan} onSelect={() => handleSelectPlan(plan)} />
-            ))}
-          </div>
+
+          {plans ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {plans.map((plan) => (
+                <PlanCard key={plan.id} {...plan} onSelect={() => handleSelectPlan(plan)} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-64 bg-[#f4faf1] rounded-2xl border border-[#cce0cc] animate-pulse" />
+              ))}
+            </div>
+          )}
+
+          {bikeData && !hasPricing && (
+            <div className="mt-4 p-4 bg-[#FAEEDA] border border-[#f0c060] rounded-xl text-[12px] text-[#854F0B]">
+              Pricing for <strong>{activeBikeName}</strong> hasn&apos;t been set yet. Go to Admin → Inventory → Edit pricing to configure it.
+            </div>
+          )}
         </div>
 
         {/* Deposit callout */}
@@ -265,7 +201,6 @@ export default function PlansPage() {
             </div>
           </div>
         </div>
-
       </div>
       <Footer />
     </main>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
@@ -191,58 +191,11 @@ const BIKES = [
   },
 ];
 
-import { createClient } from '@/lib/supabase/client';
-
 export default function BikesPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [waitlistBike, setWaitlistBike] = useState<{ id: string; name: string } | null>(null);
-  const [bikes, setBikes] = useState<any[]>(BIKES);
+  const [waitlistBike, setWaitlistBike] = useState<string | null>(null);
   const liveStock = useBikeStock();
-
-  useEffect(() => {
-    async function loadBikes() {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from('bikes')
-          .select('*')
-          .eq('is_active', true);
-        
-        if (data && data.length > 0) {
-          const mapped = data.map(dbBike => {
-            const existing = BIKES.find(b => b.name.toLowerCase() === dbBike.name.toLowerCase());
-            
-            let imageUrl = dbBike.image_path || existing?.imageUrl || '/bikes/machcity.png';
-            if (imageUrl && !imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-              const { data: publicUrlData } = supabase.storage.from('bike-images').getPublicUrl(imageUrl);
-              imageUrl = publicUrlData?.publicUrl || imageUrl;
-            }
-
-            return {
-              id: dbBike.id,
-              name: dbBike.name,
-              description: dbBike.description || undefined,
-              accentColor: existing?.accentColor || '#0F6E56',
-              imageUrl: imageUrl,
-              tag: dbBike.available_units === 0 ? 'Out of Stock' : (existing?.tag || null),
-              specs: Array.isArray(dbBike.specs)
-                ? dbBike.specs
-                : dbBike.specs && typeof dbBike.specs === 'object'
-                  ? Object.values(dbBike.specs as Record<string, string>).filter(Boolean)
-                  : (existing?.specs || []),
-              inStock: dbBike.available_units > 0,
-              units: dbBike.available_units,
-            };
-          });
-          setBikes(mapped);
-        }
-      } catch (err) {
-        console.error('Error fetching bikes from database:', err);
-      }
-    }
-    loadBikes();
-  }, []);
 
   useGSAP(
     () => {
@@ -272,10 +225,11 @@ export default function BikesPage() {
     { scope: containerRef }
   );
 
-  const handleSelectBike = (bike: any) => {
+  const handleSelectBike = (bike: (typeof BIKES)[number]) => {
+    const live = liveStock[bike.name];
     localStorage.setItem(
       'paavan_bike',
-      JSON.stringify({ id: bike.id, name: bike.name })
+      JSON.stringify({ id: live?.supabaseId ?? bike.id, name: bike.name })
     );
     router.push('/plans');
   };
@@ -294,7 +248,7 @@ export default function BikesPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {bikes.map((bike) => {
+          {BIKES.map((bike) => {
             const live = liveStock[bike.name];
             const inStock = live ? live.isActive && live.availableUnits > 0 : bike.inStock;
             const units = live ? live.availableUnits : bike.units;
@@ -305,7 +259,7 @@ export default function BikesPage() {
                 inStock={inStock}
                 units={units}
                 onSelect={() => handleSelectBike(bike)}
-                onWaitlist={() => setWaitlistBike({ id: bike.id, name: bike.name })}
+                onWaitlist={() => setWaitlistBike(bike.name)}
               />
             );
           })}
@@ -323,7 +277,7 @@ export default function BikesPage() {
             <div className="text-[14px] font-bold text-[#04342C] mb-1">All bikes include</div>
             <div className="text-[12px] text-[#7a9080] leading-relaxed">
               Removable waterproof battery · Pedal assist up to 50 km/h · Key-based throttle lock ·
-              Key-based throttle lock · On-call campus maintenance · ₹1,000 refundable security deposit
+              Daily unlock code · On-call campus maintenance · ₹1,000 refundable security deposit
             </div>
           </div>
         </div>
@@ -332,8 +286,7 @@ export default function BikesPage() {
       <Footer />
 
       <WaitlistModal
-        bikeId={waitlistBike?.id ?? ''}
-        bikeName={waitlistBike?.name ?? ''}
+        bikeName={waitlistBike ?? ''}
         isOpen={!!waitlistBike}
         onClose={() => setWaitlistBike(null)}
       />

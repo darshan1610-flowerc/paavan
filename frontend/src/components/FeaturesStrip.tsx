@@ -23,12 +23,13 @@ const features = [
   {
     icon: (
       <svg className="w-[26px] h-[26px] stroke-[#0F6E56] fill-none" strokeWidth="1.8" viewBox="0 0 24 24">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0110 0v4"/>
       </svg>
     ),
-    title: 'Key-based lock',
-    subtitle: 'Secure & anti-theft',
-    desc: 'Every bike comes with a key-based throttle lock that prevents unauthorised use even if someone tries to ride it.',
+    title: 'Daily unlock code',
+    subtitle: 'Fresh code every midnight',
+    desc: 'New 4-digit code resets every midnight. Key-based throttle protects against theft even if your code is seen.',
     accent: '#e0eeff',
   },
   {
@@ -93,7 +94,8 @@ export default function FeaturesStrip() {
       <div className="max-w-[1000px] mx-auto">
 
         <div className="text-center mb-10 sm:mb-14">
-          <div className="feat-eyebrow text-[11px] text-[#1D9E75] tracking-[1px] uppercase font-semibold mb-3">
+          <div className="feat-eyebrow inline-flex items-center gap-2 bg-[#EAF3DE] border border-[#b8d898] rounded-full px-5 py-2 text-[25px] text-[#0F6E56] tracking-[1px] uppercase font-bold mb-3">
+            <span className="w-2 h-2 rounded-full bg-[#1D9E75] shrink-0" />
             Why PAAVAN
           </div>
           <h2 className="feat-title font-display text-[28px] sm:text-[34px] text-[#04342C] mb-3">
@@ -102,7 +104,6 @@ export default function FeaturesStrip() {
           <p className="feat-sub text-[13px] sm:text-[14px] text-[#5a7a6a] max-w-[420px] mx-auto">
             E-bikes for students and delivery partners — built by IIT Bombay students
           </p>
-          {/* Mobile hint */}
           <p className="md:hidden text-[11px] text-[#9ab0a0] mt-2">Tap a card to read more</p>
         </div>
 

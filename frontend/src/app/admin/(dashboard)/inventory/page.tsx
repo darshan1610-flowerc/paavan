@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import EditStockModal from '@/components/admin/inventory/EditStockModal';
+import EditPricingModal from '@/components/admin/inventory/EditPricingModal';
 import AddBikeModal from '@/components/admin/inventory/AddBikeModal';
 
 interface Bike {
@@ -12,12 +13,16 @@ interface Bike {
   on_rent: number;
   in_repair: number;
   is_active: boolean;
+  price_per_day: number;
+  price_per_week: number;
+  price_per_month: number;
 }
 
 export default function InventoryPage() {
   const [bikes, setBikes] = useState<Bike[] | null>(null);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<Bike | null>(null);
+  const [editingPricing, setEditingPricing] = useState<Bike | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -87,10 +92,13 @@ export default function InventoryPage() {
         <p className="text-[13px] text-[#9fd8bc]">No bike models yet — add one to get started.</p>
       ) : (
         <div className="bg-[#0d2a20] border border-[#163a2c] rounded-[10px] overflow-x-auto">
-          <table className="w-full text-[12px] min-w-[760px]">
+          <table className="w-full text-[12px] min-w-[900px]">
             <thead>
               <tr className="text-[#9fd8bc] text-left border-b border-[#163a2c]">
                 <th className="py-3 px-4">Bike name</th>
+                <th className="py-3 px-4">Daily</th>
+                <th className="py-3 px-4">Weekly</th>
+                <th className="py-3 px-4">Monthly</th>
                 <th className="py-3 px-4">Total</th>
                 <th className="py-3 px-4">In stock</th>
                 <th className="py-3 px-4">On rent</th>
@@ -103,6 +111,15 @@ export default function InventoryPage() {
               {bikes.map((bike) => (
                 <tr key={bike.id} className="border-b border-[#163a2c] text-white">
                   <td className="py-3 px-4 font-semibold">{bike.name}</td>
+                  <td className="py-3 px-4 text-[#9fd8bc]">
+                    {bike.price_per_day > 0 ? `₹${bike.price_per_day.toLocaleString('en-IN')}` : <span className="text-[#f5b0b0]">—</span>}
+                  </td>
+                  <td className="py-3 px-4 text-[#9fd8bc]">
+                    {bike.price_per_week > 0 ? `₹${bike.price_per_week.toLocaleString('en-IN')}` : <span className="text-[#f5b0b0]">—</span>}
+                  </td>
+                  <td className="py-3 px-4 text-[#9fd8bc]">
+                    {bike.price_per_month > 0 ? `₹${bike.price_per_month.toLocaleString('en-IN')}` : <span className="text-[#f5b0b0]">—</span>}
+                  </td>
                   <td className="py-3 px-4">{bike.total_units}</td>
                   <td className="py-3 px-4">{bike.available_units}</td>
                   <td className="py-3 px-4">{bike.on_rent}</td>
@@ -122,6 +139,12 @@ export default function InventoryPage() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex flex-wrap gap-1.5">
+                      <button
+                        onClick={() => setEditingPricing(bike)}
+                        className="px-2.5 py-1 text-[11px] font-semibold text-[#7adbb4] border border-[#0F6E56] rounded-[6px] hover:bg-[#163a2c]"
+                      >
+                        Edit pricing
+                      </button>
                       <button
                         onClick={() => setEditing(bike)}
                         className="px-2.5 py-1 text-[11px] font-semibold text-[#9fd8bc] border border-[#1f4a38] rounded-[6px] hover:bg-[#163a2c]"
@@ -164,10 +187,24 @@ export default function InventoryPage() {
           bikeName={editing.name}
           currentAvailable={editing.available_units}
           totalUnits={editing.total_units}
-          onRent={editing.on_rent}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
+            load();
+          }}
+        />
+      )}
+
+      {editingPricing && (
+        <EditPricingModal
+          bikeId={editingPricing.id}
+          bikeName={editingPricing.name}
+          currentPricePerDay={editingPricing.price_per_day}
+          currentPricePerWeek={editingPricing.price_per_week}
+          currentPricePerMonth={editingPricing.price_per_month}
+          onClose={() => setEditingPricing(null)}
+          onSaved={() => {
+            setEditingPricing(null);
             load();
           }}
         />

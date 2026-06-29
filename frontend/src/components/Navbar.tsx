@@ -4,7 +4,6 @@ import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
-import EBikeGuide from './EBikeGuide';
 
 gsap.registerPlugin(useGSAP);
 
@@ -18,7 +17,7 @@ const navLinks = [
 export default function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -33,91 +32,94 @@ export default function Navbar() {
     { scope: navRef }
   );
 
-  const baseNav = `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    scrolled
-      ? 'bg-white/97 backdrop-blur-md shadow-[0_2px_20px_rgba(15,110,86,0.08)] border-b border-[#e8f0e8]'
-      : 'bg-white/95 backdrop-blur-sm border-b border-[rgba(15,110,86,0.07)]'
+  const baseNav = `fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#e8f0e8] transition-all duration-300 ${
+    scrolled ? 'shadow-[0_2px_12px_rgba(15,110,86,0.08)]' : ''
   }`;
 
   return (
-    <>
     <nav ref={navRef} className={baseNav}>
 
-      {/* ── Row 1: Logo + Rent now ── */}
-      <div className="h-[56px] flex items-center justify-between px-4 sm:px-6">
+      {/* ── Main row ── */}
+      <div className="h-[64px] sm:h-[80px] lg:h-[101px] flex items-center justify-between px-4 sm:px-6 lg:px-9">
+
+        {/* Logo */}
         <Link href="/" className="flex-shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
             alt="PAAVAN"
-            className="block w-[180px] sm:w-[210px] md:w-[240px]"
+            className="block w-[110px] sm:w-[160px] lg:w-[220px]"
             style={{ height: 'auto' }}
           />
         </Link>
 
-        {/* Desktop nav links (visible md+) */}
-        <div className="hidden md:flex items-center gap-0.5">
+        {/* Desktop nav links (lg+) */}
+        <div className="hidden lg:flex items-center gap-1">
           {navLinks.map(({ href, label }) => (
-            <NavLink key={href} href={href}>{label}</NavLink>
+            <Link
+              key={href}
+              href={href}
+              className="px-4 py-2 rounded-[8px] text-[15px] font-medium text-[#4a6054] hover:bg-[#EAF3DE] hover:text-[#085041] transition-all duration-150 whitespace-nowrap"
+            >
+              {label}
+            </Link>
           ))}
-          <button
-            onClick={() => setGuideOpen(true)}
-            className="px-3.5 py-2 rounded-[8px] text-[13px] font-medium text-[#4a6054] hover:bg-[#EAF3DE] hover:text-[#085041] transition-all duration-150"
-          >
-            E-Bike Guide
-          </button>
           <Link
             href="/bikes"
-            className="ml-3 px-4 py-2 bg-[#0F6E56] text-white text-[13px] font-semibold rounded-[8px] hover:bg-[#085041] active:scale-95 transition-all duration-150 shadow-[0_2px_10px_rgba(15,110,86,0.28)]"
+            className="ml-3 px-5 py-2.5 bg-[#0F6E56] text-white text-[15px] font-semibold rounded-[9px] hover:bg-[#085041] active:scale-95 transition-all duration-150 shadow-[0_2px_10px_rgba(15,110,86,0.28)] whitespace-nowrap"
           >
             Rent now
           </Link>
         </div>
 
-        {/* Mobile: Rent now button always visible */}
-        <Link
-          href="/bikes"
-          className="md:hidden px-4 py-2 bg-[#0F6E56] text-white text-[13px] font-bold rounded-[8px] active:scale-95 transition-all shadow-[0_2px_10px_rgba(15,110,86,0.28)]"
-        >
-          Rent now
-        </Link>
-      </div>
-
-      {/* ── Row 2: Nav links — mobile only ── */}
-      <div className="md:hidden border-t border-[#edf5ed] overflow-x-auto scrollbar-none">
-        <div className="flex items-stretch h-[38px] w-max min-w-full px-2">
-          {navLinks.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center px-3.5 text-[12px] font-semibold text-[#4a6054] hover:text-[#0F6E56] hover:bg-[#f4faf1] rounded-[6px] whitespace-nowrap transition-colors"
-            >
-              {label}
-            </Link>
-          ))}
-          <button
-            onClick={() => setGuideOpen(true)}
-            className="flex items-center px-3.5 text-[12px] font-semibold text-[#4a6054] hover:text-[#0F6E56] hover:bg-[#f4faf1] rounded-[6px] whitespace-nowrap transition-colors"
+        {/* Tablet + mobile right side */}
+        <div className="flex lg:hidden items-center gap-2">
+          <Link
+            href="/bikes"
+            className="px-4 py-2 bg-[#0F6E56] text-white text-[13px] sm:text-[14px] font-bold rounded-[8px] active:scale-95 transition-all shadow-[0_2px_10px_rgba(15,110,86,0.28)] whitespace-nowrap"
           >
-            E-Bike Guide
+            Rent now
+          </Link>
+          {/* Hamburger */}
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="p-2 rounded-[8px] hover:bg-[#f4faf1] transition-colors"
+            aria-label="Toggle menu"
+          >
+            <svg className="w-5 h-5 stroke-[#0F6E56]" viewBox="0 0 24 24" fill="none" strokeWidth="2.2" strokeLinecap="round">
+              {menuOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="7" x2="21" y2="7" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="17" x2="21" y2="17" />
+                </>
+              )}
+            </svg>
           </button>
         </div>
       </div>
 
+      {/* ── Mobile dropdown menu ── */}
+      {menuOpen && (
+        <div className="lg:hidden border-t border-[#edf5ed] bg-white px-4 py-3 flex flex-col gap-1">
+          {navLinks.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+              className="px-4 py-3 text-[15px] font-semibold text-[#4a6054] hover:text-[#0F6E56] hover:bg-[#f4faf1] rounded-[8px] transition-colors"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      )}
+
     </nav>
-
-    <EBikeGuide isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
-    </>
-  );
-}
-
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="px-3.5 py-2 rounded-[8px] text-[13px] font-medium text-[#4a6054] hover:bg-[#EAF3DE] hover:text-[#085041] transition-all duration-150"
-    >
-      {children}
-    </Link>
   );
 }

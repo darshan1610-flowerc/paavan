@@ -11,7 +11,7 @@ interface DepositRow {
   amount: number;
   status: string;
   booking_id: string;
-  users: { phone: string } | null;
+  user: { phone: string } | null;
   bookings: { payment_id: string | null; booking_ref: string } | null;
 }
 
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const { data: fetched, error: fetchError } = await supabase
       .from('deposits')
-      .select('id, amount, status, booking_id, users!deposits_user_id_fkey(phone), bookings(payment_id, booking_ref)')
+      .select('id, amount, status, booking_id, user:user_id(phone), bookings(payment_id, booking_ref)')
       .eq('id', depositId)
       .single();
 
@@ -56,36 +56,9 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    // Bike is back — increment available_units and mark booking completed
-    const { data: booking } = await supabase
-      .from('bookings')
-      .select('bike_id')
-      .eq('id', deposit.booking_id)
-      .single();
-
-    if (booking?.bike_id) {
-      const { data: bike } = await supabase
-        .from('bikes')
-        .select('available_units, total_units')
-        .eq('id', booking.bike_id)
-        .single();
-
-      if (bike) {
-        await supabase
-          .from('bikes')
-          .update({ available_units: Math.min(bike.total_units, bike.available_units + 1) })
-          .eq('id', booking.bike_id);
-      }
-
-      await supabase
-        .from('bookings')
-        .update({ status: 'completed' })
-        .eq('id', deposit.booking_id);
-    }
-
-    if (deposit.users?.phone) {
+    if (deposit.user?.phone) {
       await sendWhatsApp(
-        deposit.users.phone,
+        deposit.user.phone,
         `Your ₹${deposit.amount} deposit for booking ${deposit.bookings?.booking_ref} has been refunded. Should reflect in 2-3 business days.`
       );
     }

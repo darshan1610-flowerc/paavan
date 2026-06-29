@@ -17,11 +17,9 @@ const headline = [
 ];
 
 const stats = [
-  { value: '30+', label: 'Bikes on campus' },
+  { value: '60+', label: 'Bikes on campus' },
   { value: '₹39', label: 'Per day' },
   { value: '150km', label: 'Max range' },
-  { value: '75%', label: 'ROI / year' },
-  { value: '18mo', label: 'Break-even' },
 ];
 
 export default function Hero() {

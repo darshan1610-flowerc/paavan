@@ -9,7 +9,7 @@ interface DepositRow {
   id: string;
   amount: number;
   status: string;
-  users: { phone: string } | null;
+  user: { phone: string } | null;
   bookings: { booking_ref: string } | null;
 }
 
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const { data: fetched, error: fetchError } = await supabase
       .from('deposits')
-      .select('id, amount, status, users!deposits_user_id_fkey(phone), bookings(booking_ref)')
+      .select('id, amount, status, user:user_id(phone), bookings(booking_ref)')
       .eq('id', depositId)
       .single();
 
@@ -47,9 +47,9 @@ export async function POST(req: NextRequest) {
 
     if (error) throw error;
 
-    if (deposit.users?.phone) {
+    if (deposit.user?.phone) {
       await sendWhatsApp(
-        deposit.users.phone,
+        deposit.user.phone,
         `Your ₹${deposit.amount} deposit for booking ${deposit.bookings?.booking_ref} has been withheld: ${reason}. Contact us if you have questions.`
       );
     }

@@ -18,7 +18,7 @@ interface Deposit {
   booking_id: string;
   user_id: string;
   bookings: { booking_ref: string } | null;
-  users: { name: string | null; phone: string; aadhaar_status: string } | null;
+  user: { name: string | null; phone: string; aadhaar_status: string } | null;
 }
 
 export default function DepositReturnsPage() {
@@ -143,15 +143,15 @@ export default function DepositReturnsPage() {
             <div key={d.id} className="bg-[#0d2a20] border border-[#163a2c] rounded-[10px] p-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <div className="text-[14px] font-bold text-white">{d.users?.name ?? '—'}</div>
+                  <div className="text-[14px] font-bold text-white">{d.user?.name ?? '—'}</div>
                   <div className="text-[11px] text-[#9fd8bc]">{d.bookings?.booking_ref}</div>
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    d.users?.aadhaar_status === 'verified' ? 'bg-[#163a2c] text-[#7adbb4]' : 'bg-[#3a1414] text-[#f5b0b0]'
+                    d.user?.aadhaar_status === 'verified' ? 'bg-[#163a2c] text-[#7adbb4]' : 'bg-[#3a1414] text-[#f5b0b0]'
                   }`}
                 >
-                  Aadhaar {d.users?.aadhaar_status === 'verified' ? 'Verified ✓' : 'Not verified ✗'}
+                  Aadhaar {d.user?.aadhaar_status === 'verified' ? 'Verified ✓' : 'Not verified ✗'}
                 </span>
               </div>
 

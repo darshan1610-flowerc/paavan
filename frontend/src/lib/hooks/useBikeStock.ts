@@ -4,49 +4,58 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface LiveStock {
+  supabaseId: string;
   availableUnits: number;
   isActive: boolean;
+  pricePerDay: number;
+  pricePerWeek: number;
+  pricePerMonth: number;
 }
 
-// Bikes are matched by name (not id) — the public site's hardcoded
-// BIKES array uses slug-style ids ("hero-sprint") that have no
-// relationship to the bikes table's UUID primary keys, but the admin
-// creates rows with the same display name shown on the card.
 export function useBikeStock() {
   const [stockByName, setStockByName] = useState<Record<string, LiveStock>>({});
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      return; // no Supabase project configured yet — keep the hardcoded fallback data
+      return;
     }
 
     const supabase = createClient();
     let active = true;
 
-    const applyRows = (rows: { name: string; available_units: number; is_active: boolean }[]) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const applyRows = (rows: any[]) => {
       if (!active) return;
       setStockByName(
-        Object.fromEntries(rows.map((r) => [r.name, { availableUnits: r.available_units, isActive: r.is_active }]))
+        Object.fromEntries(
+          rows.map((r) => [
+            String(r.name),
+            {
+              supabaseId: String(r.id ?? ''),
+              availableUnits: Number(r.available_units ?? 0),
+              isActive: Boolean(r.is_active ?? true),
+              pricePerDay: Number(r.price_per_day ?? 0),
+              pricePerWeek: Number(r.price_per_week ?? 0),
+              pricePerMonth: Number(r.price_per_month ?? 0),
+            },
+          ])
+        )
       );
     };
 
-    supabase
-      .from('bikes')
-      .select('name, available_units, is_active')
-      .then(({ data }) => applyRows(data ?? []));
+    const fetch = () =>
+      supabase
+        .from('bikes')
+        .select('*')
+        .then(({ data, error }) => {
+          if (!error) applyRows(data ?? []);
+        });
+
+    fetch();
 
     const channel = supabase
       .channel('public:bikes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'bikes' },
-        () => {
-          supabase
-            .from('bikes')
-            .select('name, available_units, is_active')
-            .then(({ data }) => applyRows(data ?? []));
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bikes' }, fetch)
       .subscribe();
 
     return () => {

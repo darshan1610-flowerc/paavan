@@ -20,8 +20,11 @@ export const passwordResetConfirmSchema = z.object({
 export const inventoryCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
   description: z.string().trim().max(2000).optional(),
-  specs: z.array(z.string()).default([]),
-  totalUnits: z.number().int().min(1),
+  specs: z.record(z.string(), z.string()).default({}),
+  pricePerDay: z.number().int().min(0),
+  pricePerWeek: z.number().int().min(0),
+  pricePerMonth: z.number().int().min(0),
+  totalUnits: z.number().int().min(0),
   imagePath: z.string().trim().max(500).optional(),
 });
 
