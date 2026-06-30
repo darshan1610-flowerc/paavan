@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { gsap } from 'gsap';
 import { useGSAP } from '@gsap/react';
+import EBikeGuide from './EBikeGuide';
 
 gsap.registerPlugin(useGSAP);
 
@@ -18,6 +19,7 @@ export default function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10);
@@ -37,6 +39,7 @@ export default function Navbar() {
   }`;
 
   return (
+    <>
     <nav ref={navRef} className={baseNav}>
 
       {/* ── Main row ── */}
@@ -64,6 +67,12 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+          <button
+            onClick={() => setGuideOpen(true)}
+            className="px-4 py-2 rounded-[8px] text-[15px] font-medium text-[#4a6054] hover:bg-[#EAF3DE] hover:text-[#085041] transition-all duration-150 whitespace-nowrap cursor-pointer"
+          >
+            Usage Guide
+          </button>
           <Link
             href="/bikes"
             className="ml-3 px-5 py-2.5 bg-[#0F6E56] text-white text-[15px] font-semibold rounded-[9px] hover:bg-[#085041] active:scale-95 transition-all duration-150 shadow-[0_2px_10px_rgba(15,110,86,0.28)] whitespace-nowrap"
@@ -117,9 +126,20 @@ export default function Navbar() {
               {label}
             </Link>
           ))}
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              setGuideOpen(true);
+            }}
+            className="px-4 py-3 text-[15px] font-semibold text-left text-[#4a6054] hover:text-[#0F6E56] hover:bg-[#f4faf1] rounded-[8px] transition-colors cursor-pointer"
+          >
+            Usage Guide
+          </button>
         </div>
       )}
 
     </nav>
+    <EBikeGuide isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
+    </>
   );
 }
