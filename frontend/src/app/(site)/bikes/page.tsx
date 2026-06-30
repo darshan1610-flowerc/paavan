@@ -194,7 +194,7 @@ const BIKES = [
 export default function BikesPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [waitlistBike, setWaitlistBike] = useState<string | null>(null);
+  const [waitlistBike, setWaitlistBike] = useState<{ id: string; name: string } | null>(null);
   const liveStock = useBikeStock();
 
   useGSAP(
@@ -259,7 +259,7 @@ export default function BikesPage() {
                 inStock={inStock}
                 units={units}
                 onSelect={() => handleSelectBike(bike)}
-                onWaitlist={() => setWaitlistBike(bike.name)}
+                onWaitlist={() => setWaitlistBike({ id: live?.supabaseId ?? bike.id, name: bike.name })}
               />
             );
           })}
@@ -286,7 +286,8 @@ export default function BikesPage() {
       <Footer />
 
       <WaitlistModal
-        bikeName={waitlistBike ?? ''}
+        bikeId={waitlistBike?.id ?? ''}
+        bikeName={waitlistBike?.name ?? ''}
         isOpen={!!waitlistBike}
         onClose={() => setWaitlistBike(null)}
       />
