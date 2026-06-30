@@ -187,6 +187,7 @@ export default function InventoryPage() {
           bikeName={editing.name}
           currentAvailable={editing.available_units}
           totalUnits={editing.total_units}
+          onRent={editing.on_rent}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);
