@@ -25,15 +25,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'This bike is currently out of stock' }, { status: 409 });
     }
 
-    // Decrement — .gt guard prevents going negative if two requests race
-    const { error: updateError } = await supabase
-      .from('bikes')
-      .update({ available_units: bike.available_units - 1 })
-      .eq('id', bikeId)
-      .gt('available_units', 0);
-
-    if (updateError) throw updateError;
-
     return NextResponse.json({ ok: true });
   } catch (error) {
     return handleApiError(error);

@@ -33,6 +33,9 @@ export default function BookingPage() {
   const router = useRouter();
   const formRef = useRef<HTMLDivElement>(null);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
+
   const [showOTP, setShowOTP] = useState(true);
   const [isReturning, setIsReturning] = useState(false);
   const [phone, setPhone] = useState('');
@@ -40,12 +43,12 @@ export default function BookingPage() {
   const [fileUploaded, setFileUploaded] = useState<string | null>(null);
   const [payError, setPayError] = useState('');
   const [paying, setPaying] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [startDate, setStartDate] = useState(todayStr);
+  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
 
   const [bike, setBike] = useState<StoredBike | null>(null);
   const [plan, setPlan] = useState<StoredPlan | null>(null);
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tomorrowStr = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })();
 
   useEffect(() => {
     const b = localStorage.getItem('paavan_bike');
@@ -81,6 +84,19 @@ export default function BookingPage() {
     setPayError('');
     setPaying(true);
     try {
+      // 1. Perform validation for new customers
+      if (!isReturning) {
+        if (!fullName.trim()) {
+          setPayError('Please enter your full name.');
+          return;
+        }
+        if (!aadhaarFile) {
+          setPayError('Please upload your Aadhaar card.');
+          return;
+        }
+      }
+
+      // 2. Perform frontend stock validation
       if (bike?.id) {
         const res = await fetch('/api/booking', {
           method: 'POST',
@@ -93,19 +109,53 @@ export default function BookingPage() {
           return;
         }
       }
+
+      // 3. Register the booking on the backend
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      const formData = new FormData();
+      formData.append('name', isReturning ? RETURNING_MOCK.name : fullName.trim());
+      formData.append('phone', isReturning ? RETURNING_MOCK.phone : phone);
+      formData.append('bike', bike?.name ?? '');
+      formData.append('plan', plan?.name ?? '');
+      formData.append('date', startDate);
+      formData.append('aadhaar_already_verified', isReturning ? 'true' : 'false');
+      
+      if (!isReturning && aadhaarFile) {
+        formData.append('aadhaar', aadhaarFile);
+      }
+
+      const resBook = await fetch(`${backendUrl}/api/bookings`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!resBook.ok) {
+        const data = await resBook.json();
+        setPayError(data.error ?? 'Failed to register your booking. Please check details.');
+        return;
+      }
+
+      const bookData = await resBook.json();
+      const bookingId = bookData.bookingId;
+
+      // 4. Save booking metadata in localStorage for payment processing
       localStorage.setItem('paavan_has_ride', 'true');
       localStorage.setItem(
         'paavan_active_ride',
         JSON.stringify({
+          bookingId,
           bike: bike?.name ?? 'Campus Rider',
           plan: plan?.name ?? 'Monthly',
           duration: plan?.duration ?? '30 days',
           total,
-          name: isReturning ? RETURNING_MOCK.name : 'You',
-          startDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+          name: isReturning ? RETURNING_MOCK.name : fullName.trim(),
+          startDate: new Date(startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
         })
       );
       router.push('/payment');
+    } catch (err) {
+      console.error('Booking submission error:', err);
+      setPayError('Connection error. Is the backend running?');
     } finally {
       setPaying(false);
     }
@@ -183,6 +233,8 @@ export default function BookingPage() {
                 <label className="block text-[10px] font-bold text-[#9ab09a] tracking-wider uppercase mb-1.5">Rental start date</label>
                 <input
                   type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
                   className="w-full px-3.5 py-2.5 border border-[#cce0cc] rounded-[8px] text-[13px] font-sans focus:outline-none focus:border-[#0F6E56] focus:ring-2 focus:ring-[#0F6E56]/10 transition-all"
                   min={todayStr}
                   max={tomorrowStr}
@@ -204,6 +256,8 @@ export default function BookingPage() {
                   <label className="block text-[12px] font-semibold text-[#5a7060] mb-1.5">Full name</label>
                   <input
                     type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="Your full name"
                     className="w-full px-3.5 py-2.5 border border-[#cce0cc] rounded-[8px] text-[13px] font-sans focus:outline-none focus:border-[#0F6E56] focus:ring-2 focus:ring-[#0F6E56]/10 transition-all"
                   />
@@ -218,6 +272,8 @@ export default function BookingPage() {
                   <label className="block text-[12px] font-semibold text-[#5a7060] mb-1.5">Rental start date</label>
                   <input
                     type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
                     className="w-full px-3.5 py-2.5 border border-[#cce0cc] rounded-[8px] text-[13px] font-sans focus:outline-none focus:border-[#0F6E56] focus:ring-2 focus:ring-[#0F6E56]/10 transition-all"
                     min={todayStr}
                     max={tomorrowStr}
@@ -240,7 +296,13 @@ export default function BookingPage() {
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
                     className="hidden"
-                    onChange={(e) => e.target.files?.[0] && setFileUploaded(e.target.files[0].name)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setAadhaarFile(file);
+                        setFileUploaded(file.name);
+                      }
+                    }}
                   />
                   <svg className="w-7 h-7 stroke-[#1D9E75] fill-none mx-auto mb-2" strokeWidth="1.6" viewBox="0 0 24 24">
                     <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
